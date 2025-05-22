@@ -1,0 +1,6 @@
+defaults:
+  - networks/apelp/apelp_networks
+  - general: general_default
+  - model: model_default
+  - train: train_default
+  - _self_

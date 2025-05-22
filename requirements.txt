@@ -1,0 +1,10 @@
+hydra-core
+numpy
+scipy
+networkx[default]
+matplotlib
+seaborn
+hilbertcurve
+pytorch==2.4.1
+pytorch-cuda==11.8
+pyg==2.6.1

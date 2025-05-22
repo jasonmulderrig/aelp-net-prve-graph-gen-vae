@@ -1,0 +1,71 @@
+# local_topological_descriptors = list[list[tplgcl_dscrptr, eeel_ntwrk, save_result, return_result]]
+# type(local_topological_descriptors) = list[list[str, bool, bool, bool]]
+# global_topological_descriptors = list[list[tplgcl_dscrptr, np_oprtn, eeel_ntwrk, save_result, return_result]]
+# type(global_topological_descriptors) = list[list[str, str, bool, bool, bool]]
+# global_morphological_descriptors = list[list[mrphlgcl_dscrptr, save_result, return_result]]
+# type(global_morphological_descriptors) = list[list[str, bool, bool]]
+local_topological_descriptors:
+  -
+    - "k"
+    - False
+    - True
+    - False
+  -
+    - "k_diff"
+    - False
+    - True
+    - False
+  -
+    - "avrg_nn_k"
+    - False
+    - True
+    - False
+  -
+    - "lcl_avrg_kappa"
+    - False
+    - True
+    - False
+  -
+    - "l"
+    - False
+    - True
+    - False
+  -
+    - "l_naive"
+    - False
+    - True
+    - False
+global_topological_descriptors:
+  -
+    - "k"
+    - "mean"
+    - True
+    - True
+    - False
+  -
+    - "prop_eeel_n"
+    - ""
+    - False
+    - True
+    - False
+  -
+    - "prop_eeel_m"
+    - ""
+    - False
+    - True
+    - False
+  -
+    - "gamma"
+    - "mean"
+    - True
+    - True
+    - False
+global_morphological_descriptors:
+  -
+    - "xi_corr"
+    - True
+    - False
+  -
+    - "n_fractal_dim"
+    - True
+    - False

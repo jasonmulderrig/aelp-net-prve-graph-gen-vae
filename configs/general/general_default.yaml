@@ -1,0 +1,6 @@
+seed: 42
+train_split: 0.70
+val_split: 0.15
+test_split: 0.15
+normalize_nodal_coordinates: True
+normalize_graph_descriptors: True

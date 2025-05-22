@@ -1,0 +1,7 @@
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+conda create -n aelp-net-prve-graph-gen-vae python=3.12.9
+conda activate aelp-net-prve-graph-gen-vae
+conda install pytorch==2.4.1 pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install pyg -c pyg
+pip install hydra-core numpy scipy networkx[default] matplotlib seaborn hilbertcurve
