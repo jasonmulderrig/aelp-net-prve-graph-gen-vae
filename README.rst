@@ -26,7 +26,7 @@ The core functions can then be called upon in Python files (or Jupyter notebooks
 
 * ``abelp``
 * ``apelp``
-* ``auelp```
+* ``auelp``
 
 Importantly, configuration settings for each of these networks are stored in an appropriately named sub-directory within the ``configs/networks`` directory (``configs/networks/abelp``, ``configs/networks/apelp``, ``configs/networks/auelp``). Each of these sub-directories contain a YAML file defining a wide variety of parameter configuration settings. Moreover, each of these sub-directories contain two more sub-directories, ``topology`` and ``descriptors``. Within each of these sub-directories are YAML files that define parameter configuration settings specifically related to network topology and descriptor calculations, respectively. The Hydra package is employed to load in the settings from the YAML files.
 
