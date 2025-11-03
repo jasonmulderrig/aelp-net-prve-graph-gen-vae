@@ -68,30 +68,30 @@ def main(cfg: DictConfig) -> None:
             graph_filename = aelp_filename + ".npz"
 
             # Load in graph data
-            L = np.loadtxt(L_filename)
-            orgnl_coords = np.loadtxt(orgnl_coords_filename)
-            coords = np.loadtxt(coords_filename)
-            core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int)
-            conn_edges = np.loadtxt(conn_edges_filename, dtype=int)
-            conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int)
-            l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename)
-            lcl_k = np.loadtxt(lcl_k_filename, dtype=int)
-            lcl_k_diff = np.loadtxt(lcl_k_diff_filename, dtype=int)
-            lcl_avrg_nn_k = np.loadtxt(lcl_avrg_nn_k_filename)
-            lcl_lcl_avrg_kappa = np.loadtxt(lcl_lcl_avrg_kappa_filename)
-            lcl_l = np.loadtxt(lcl_l_filename)
-            lcl_l_naive = np.loadtxt(lcl_l_naive_filename)
-            eeel_glbl_mean_k = np.asarray(
-                [np.loadtxt(eeel_glbl_mean_k_filename)])
-            glbl_prop_eeel_n = np.asarray(
-                [np.loadtxt(glbl_prop_eeel_n_filename)])
-            glbl_prop_eeel_m = np.asarray(
-                [np.loadtxt(glbl_prop_eeel_m_filename)])
-            eeel_glbl_mean_gamma = np.asarray(
-                [np.loadtxt(eeel_glbl_mean_gamma_filename)])
-            glbl_n_fractal_dim = np.asarray(
-                [np.loadtxt(glbl_n_fractal_dim_filename)])
-            glbl_xi_corr = np.asarray([np.loadtxt(glbl_xi_corr_filename)])
+            L = np.loadtxt(L_filename, ndmin=1)
+            orgnl_coords = np.loadtxt(orgnl_coords_filename, ndmin=1)
+            coords = np.loadtxt(coords_filename, ndmin=1)
+            core_nodes_type = np.loadtxt(
+                core_nodes_type_filename, dtype=int, ndmin=1)
+            conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+            conn_edges_type = np.loadtxt(
+                conn_edges_type_filename, dtype=int, ndmin=1)
+            l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename, ndmin=1)
+            lcl_k = np.loadtxt(lcl_k_filename, dtype=int, ndmin=1)
+            lcl_k_diff = np.loadtxt(lcl_k_diff_filename, dtype=int, ndmin=1)
+            lcl_avrg_nn_k = np.loadtxt(lcl_avrg_nn_k_filename, ndmin=1)
+            lcl_lcl_avrg_kappa = np.loadtxt(
+                lcl_lcl_avrg_kappa_filename, ndmin=1)
+            lcl_l = np.loadtxt(lcl_l_filename, ndmin=1)
+            lcl_l_naive = np.loadtxt(lcl_l_naive_filename, ndmin=1)
+            eeel_glbl_mean_k = np.loadtxt(eeel_glbl_mean_k_filename, ndmin=1)
+            glbl_prop_eeel_n = np.loadtxt(glbl_prop_eeel_n_filename, ndmin=1)
+            glbl_prop_eeel_m = np.loadtxt(glbl_prop_eeel_m_filename, ndmin=1)
+            eeel_glbl_mean_gamma = np.loadtxt(
+                eeel_glbl_mean_gamma_filename, ndmin=1)
+            glbl_n_fractal_dim = np.loadtxt(
+                glbl_n_fractal_dim_filename, ndmin=1)
+            glbl_xi_corr = np.loadtxt(glbl_xi_corr_filename, ndmin=1)
 
             # Save graph data in an .npz file
             np.savez(

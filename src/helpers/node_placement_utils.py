@@ -271,7 +271,7 @@ def initial_node_seeding(
     
     """
     # Load L
-    L = np.loadtxt(L_filename_str(network, date, batch, sample))
+    L = np.loadtxt(L_filename_str(network, date, batch, sample), ndmin=1)
 
     # Configuration filename prefix
     config_filename_prefix = config_filename_str(
@@ -307,8 +307,8 @@ def additional_random_node_placement(
     
     """
     # Load L and node coordinates
-    L = np.loadtxt(L_filename)
-    coords = np.loadtxt(coords_filename)
+    L = np.loadtxt(L_filename, ndmin=1)
+    coords = np.loadtxt(coords_filename, ndmin=1)
 
     # Calculate the number of nodes presently in the simulation box
     n_coords = np.shape(coords)[0]
@@ -357,8 +357,8 @@ def additional_periodic_random_hard_disk_node_placement(
     
     """
     # Load L and node coordinates
-    L = np.loadtxt(L_filename)
-    coords = np.loadtxt(coords_filename)
+    L = np.loadtxt(L_filename, ndmin=1)
+    coords = np.loadtxt(coords_filename, ndmin=1)
 
     # Calculate the number of nodes presently in the simulation box
     n_coords = np.shape(coords)[0]
@@ -510,7 +510,7 @@ def additional_nodes_type(core_nodes_type_filename: str, n: int) -> None:
     
     """
     # Load core nodes type
-    core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int)
+    core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int, ndmin=1)
 
     # Calculate the number of nodes presently in the core nodes type
     # array

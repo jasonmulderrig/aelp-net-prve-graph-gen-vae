@@ -1,6 +1,7 @@
 defaults:
   - networks/apelp/apelp_networks
-  - general: general_default
-  - model: model_default
-  - train: train_default
+  - general: 20250920P
+  - model: 20250920P
+  - train: 20250920P
   - _self_
+label: 20250920P

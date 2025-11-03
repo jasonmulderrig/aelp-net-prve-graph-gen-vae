@@ -23,10 +23,7 @@ def p_gaussian_cnfrmtn_func(
         np.ndarray | float: Gaussian end-to-end distance polymer chain
         conformation probability (distribution).
     """
-    return (
-        (np.sqrt(3/(2*np.pi*nu*b**2)))**3 * np.exp(-3*r**2/(2*nu*b**2))
-        * 4 * np.pi * r**2
-    )
+    return (np.sqrt(3/(2*np.pi*nu*b**2)))**3 * np.exp(-3*r**2/(2*nu*b**2))
 
 def unit_dirac_func(
         x: np.ndarray | float | int,
@@ -260,7 +257,7 @@ def p_rel_net_flory_gaussian_cnfrmtn_func(
         polymerization and a Gaussian end-to-end distance chain
         conformation probability distribution.
     """
-    # nu = 1 -> n = 100,000 is proscribed by Hanson
+    # nu = 1 -> nu = 100,000 is proscribed by Hanson
     nu_arr = np.arange(100000, dtype=int) + 1
     if isinstance(r, float | int):
         return np.sum(p_net_flory_gaussian_cnfrmtn_func(b, nu_mean, nu_arr, r))

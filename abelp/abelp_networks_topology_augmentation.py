@@ -48,7 +48,7 @@ def main(cfg: DictConfig) -> None:
                 aelp_filename_str(cfg.label.network, cfg.label.date, cfg.label.batch, sample, config)
                 + ".coords"
             )
-            coords = np.loadtxt(coords_filename)
+            coords = np.loadtxt(coords_filename, ndmin=1)
             sample_n_coords = np.concatenate(
                 (sample_n_coords, np.asarray([np.shape(coords)[0]])),
                 dtype=int)
@@ -58,14 +58,14 @@ def main(cfg: DictConfig) -> None:
     sample_config_addtnl_n_params_arr = sample_config_params_arr.copy()
     for indx in range(sample_config_num):
         sample = int(sample_config_addtnl_n_params_arr[indx, 0])
-        sample_config_addtnl_n_params_arr[indx, 6] = sample_n_coords_max[sample]
+        sample_config_addtnl_n_params_arr[indx, 7] = sample_n_coords_max[sample]
     
     abelp_network_additional_node_seeding_params_list = params_list_func(
         sample_config_addtnl_n_params_arr)
     abelp_network_additional_node_seeding_args = (
         [
             (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), cfg.label.scheme, int(dim), float(b), int(n), int(config), int(cfg.synthesis.max_try))
-            for (sample, dim, b, _, _, _, n, _, _, _, config) in abelp_network_additional_node_seeding_params_list
+            for (sample, dim, b, _, _, _, _, n, _, _, _, config) in abelp_network_additional_node_seeding_params_list
         ]
     )
     random.shuffle(abelp_network_additional_node_seeding_args)
@@ -85,7 +85,7 @@ def main(cfg: DictConfig) -> None:
     abelp_network_additional_nodes_type_args = (
         [
             (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), int(n), int(config))
-            for (sample, _, _, _, _, _, n, _, _, _, config) in abelp_network_additional_nodes_type_params_list
+            for (sample, _, _, _, _, _, _, n, _, _, _, config) in abelp_network_additional_nodes_type_params_list
         ]
     )
     random.shuffle(abelp_network_additional_nodes_type_args)
@@ -102,7 +102,7 @@ def main(cfg: DictConfig) -> None:
         flush=True)
 
     abelp_network_hilbert_node_label_assignment_params_arr = (
-        sample_config_params_arr[:, [0, 10]]
+        sample_config_params_arr[:, [0, 11]]
     ) # sample, config
     abelp_network_hilbert_node_label_assignment_params_list = params_list_func(
         abelp_network_hilbert_node_label_assignment_params_arr)

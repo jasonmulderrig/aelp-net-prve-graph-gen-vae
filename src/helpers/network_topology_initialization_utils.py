@@ -162,6 +162,7 @@ def core_node_values_update_in_edges_func(
 
     # Update all original core node values with updated core node values
     # for each edge
+    if np.ndim(edges) == 1: edges = np.expand_dims(edges, axis=0)
     for edge in range(np.shape(edges)[0]):
         edges[edge, 0] = int(core_nodes_indcs[edges[edge, 0]])
         edges[edge, 1] = int(core_nodes_indcs[edges[edge, 1]])

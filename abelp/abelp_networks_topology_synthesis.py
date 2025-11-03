@@ -41,38 +41,41 @@ def main(cfg: DictConfig) -> None:
     if sample_params_arr.ndim == 1:
         sample = sample_params_arr[0]
         dim = sample_params_arr[1]
-        rho_en = sample_params_arr[4]
-        k = sample_params_arr[5]
-        n = sample_params_arr[6]
-        p = sample_params_arr[7]
-        en_min = int(sample_params_arr[8])
-        en_max = int(sample_params_arr[9])
+        chi = sample_params_arr[4]
+        rho_en = sample_params_arr[5]
+        k = sample_params_arr[6]
+        n = sample_params_arr[7]
+        p = sample_params_arr[8]
+        en_min = int(sample_params_arr[9])
+        en_max = int(sample_params_arr[10])
         nu_min = en_min - 1
         nu_max = en_max - 1
         nu = nu_mean_p_nu_bimodal_func(p, nu_min, nu_max)
         en = nu + 1
-        L_params_arr = np.asarray([sample, dim, rho_en, k, n, en])
+        L_params_arr = np.asarray([sample, dim, chi, rho_en, k, n, en])
     else:
-        L_params_arr = np.empty((sample_num, 6))
+        L_params_arr = np.empty((sample_num, 7))
         for indx in range(sample_num):
             sample = sample_params_arr[indx, 0]
             dim = sample_params_arr[indx, 1]
-            rho_en = sample_params_arr[indx, 4]
-            k = sample_params_arr[indx, 5]
-            n = sample_params_arr[indx, 6]
-            p = sample_params_arr[indx, 7]
-            en_min = int(sample_params_arr[indx, 8])
-            en_max = int(sample_params_arr[indx, 9])
+            chi = sample_params_arr[indx, 4]
+            rho_en = sample_params_arr[indx, 5]
+            k = sample_params_arr[indx, 6]
+            n = sample_params_arr[indx, 7]
+            p = sample_params_arr[indx, 8]
+            en_min = int(sample_params_arr[indx, 9])
+            en_max = int(sample_params_arr[indx, 10])
             nu_min = en_min - 1
             nu_max = en_max - 1
             nu = nu_mean_p_nu_bimodal_func(p, nu_min, nu_max)
             en = nu + 1
-            L_params_arr[indx, :] = np.asarray([sample, dim, rho_en, k, n, en])
+            L_params_arr[indx, :] = np.asarray(
+                [sample, dim, chi, rho_en, k, n, en])
     L_params_list = params_list_func(L_params_arr)
     L_args = (
         [
-            (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), int(dim), rho_en, int(k), int(n), int(en))
-            for (sample, dim, rho_en, k, n, en) in L_params_list
+            (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), int(dim), chi, rho_en, int(k), int(n), int(en))
+            for (sample, dim, chi, rho_en, k, n, en) in L_params_list
         ]
     )
     random.shuffle(L_args)
@@ -85,7 +88,7 @@ def main(cfg: DictConfig) -> None:
     print("Performing the initial node seeding", flush=True)
 
     initial_node_seeding_params_arr = (
-        sample_config_params_arr[:, [0, 1, 2, 6, 10]]
+        sample_config_params_arr[:, [0, 1, 2, 7, 11]]
     ) # sample, dim, b, n, config
     initial_node_seeding_params_list = params_list_func(
         initial_node_seeding_params_arr)
@@ -111,14 +114,14 @@ def main(cfg: DictConfig) -> None:
         
         for indx in range(sample_config_num):
             sample = int(sample_config_params_arr[indx, 0])
-            n = int(sample_config_params_arr[indx, 6])
-            config = int(sample_config_params_arr[indx, 10])
+            n = int(sample_config_params_arr[indx, 7])
+            config = int(sample_config_params_arr[indx, 11])
             
             coords_filename = (
                 config_filename_str(cfg.label.network, cfg.label.date, cfg.label.batch, sample, config)
                 + ".coords"
             )
-            coords = np.loadtxt(coords_filename)
+            coords = np.loadtxt(coords_filename, ndmin=1)
             
             if np.shape(coords)[0] == n: prhd_n_vs_n[indx] = 1
             else: pass
@@ -151,13 +154,13 @@ def main(cfg: DictConfig) -> None:
     print(print_str, flush=True)
 
     topology_params_arr = (
-        np.delete(sample_config_params_arr, 4, axis=1)
-    ) # sample, dim, b, xi, k, n, p, en_min, en_max, config
+        np.delete(sample_config_params_arr, 5, axis=1)
+    ) # sample, dim, b, xi, chi, k, n, p, en_min, en_max, config
     topology_params_list = params_list_func(topology_params_arr)
     topology_args = (
         [
-            (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), cfg.label.scheme, int(dim), b, xi, int(k), int(n), p, int(en_min), int(en_max), int(config), int(cfg.synthesis.max_try))
-            for (sample, dim, b, xi, k, n, p, en_min, en_max, config) in topology_params_list
+            (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), cfg.label.scheme, int(dim), b, xi, chi, int(k), int(n), p, int(en_min), int(en_max), int(config), int(cfg.synthesis.max_try))
+            for (sample, dim, b, xi, chi, k, n, p, en_min, en_max, config) in topology_params_list
         ]
     )
     random.shuffle(topology_args)

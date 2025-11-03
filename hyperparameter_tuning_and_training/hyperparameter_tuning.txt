@@ -1,0 +1,47 @@
+@echo off
+REM ======================================
+REM Batch script for hyperparameter tuning
+REM ======================================
+
+REM Activate conda environment
+CALL conda activate aelp-net-prve-graph-gen-vae
+
+REM Enable delayed variable expansion for concatenation in the loop
+setlocal enabledelayedexpansion
+
+REM Define date and list of strings
+set DATE=20250831
+set STRINGS=Q R
+
+REM Loop through strings
+for %%S in (%STRINGS%) do (
+    REM Concatenate DATE with STRING in STRINGS to create LABEL
+    set LABEL=!DATE!%%S
+    
+    REM Go to config directory
+    cd ..\configs
+
+    REM Rewrite config file
+    (
+        echo defaults:
+        echo   - networks/apelp/apelp_networks
+        echo   - general: !LABEL!
+        echo   - model: !LABEL!
+        echo   - train: !LABEL!
+        echo   - _self_
+        echo label: !LABEL!
+    ) > config.yaml
+
+    REM Go back to hyperparameter tuning directory
+    cd ..\hyperparameter_tuning_and_training
+
+    REM Run hyperparameter tuning Python code
+    python hyperparameter_tuning.py
+)
+
+REM Deactivate conda environment
+CALL conda deactivate
+
+echo ========================================
+echo All runs finished!
+echo ========================================

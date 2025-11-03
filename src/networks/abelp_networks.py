@@ -4,7 +4,7 @@ from src.file_io.file_io import (
     L_filename_str,
     config_filename_str
 )
-from src.helpers.polymer_network_utils import m_arg_stoich_func
+from src.helpers.polymer_network_utils import m_arg_n_func
 from src.helpers.network_topology_initialization_utils import (
     core_node_tessellation,
     core_to_pb_nodes_func,
@@ -80,6 +80,7 @@ def abelp_network_nu_assignment(
     nu_chn = np.asarray([nu_min, nu_max], dtype=int)
     
     # Calculate Euclidean end-to-end chain/edge lengths
+    if np.ndim(conn_edges) == 1: conn_edges = np.expand_dims(conn_edges, axis=0)
     r_chns = l_func(conn_edges, conn_edges_type, coords, L)
     m = np.shape(conn_edges)[0]
     nu_chns = np.empty(m, dtype=int)
@@ -145,6 +146,7 @@ def abelp_network_topology_initialization(
         dim: int,
         b: float,
         xi: float,
+        chi: float,
         k: int,
         n: int,
         p: float,
@@ -169,6 +171,7 @@ def abelp_network_topology_initialization(
         dim (int): Physical dimensionality of the network; either 2 or 3 (for two-dimensional or three-dimensional networks).
         b (float): Chain segment and/or cross-linker diameter.
         xi (float): Chain-to-cross-link connection probability.
+        chi (float): Stoichiometric imbalance between the number of cross-linker sites and the number of chain ends.
         k (int): Maximum cross-linker degree/functionality; either 3, 4, 5, 6, 7, or 8.
         n (int): Number of core cross-linkers.
         p (float): Probability that a chain is composed of nu_min segments (and p-1 is the probability that a chain is composed of nu_max segments).
@@ -179,7 +182,7 @@ def abelp_network_topology_initialization(
     
     """
     # Load simulation box side lengths
-    L = np.loadtxt(L_filename_str(network, date, batch, sample))
+    L = np.loadtxt(L_filename_str(network, date, batch, sample), ndmin=1)
 
     # Generate configuration filename prefix. This establishes the
     # configuration filename prefix as the filename prefix associated
@@ -207,17 +210,18 @@ def abelp_network_topology_initialization(
     # Call appropriate helper function to initialize network topology
     if (scheme == "random") or (scheme == "prhd") or (scheme == "pdhu"):
         # Load core cross-linker coordinates
-        coords = np.loadtxt(coords_filename)
+        coords = np.loadtxt(coords_filename, ndmin=1)
     elif scheme == "lammps":
         skiprows_num = 15
         # Load core cross-linker coordinates
-        coords = np.loadtxt(coords_filename, skiprows=skiprows_num, max_rows=n)
+        coords = np.loadtxt(
+            coords_filename, skiprows=skiprows_num, ndmin=1, max_rows=n)
     
     # Actual number of core cross-linkers
     n = np.shape(coords)[0]
     
-    # Calculate the stoichiometric number of chains
-    m = m_arg_stoich_func(n, k)
+    # Calculate the number of chains
+    m = m_arg_n_func(n, k, chi)
 
     # As a fail-safe check, force int-valued parameters to be ints
     k = int(np.floor(k))
@@ -228,8 +232,8 @@ def abelp_network_topology_initialization(
     m = int(np.floor(m))
 
     # Calculate minimum and maximum chain segment numbers
-    nu_min = en_min - 1
-    nu_max = en_max - 1
+    nu_min = en_min + 1
+    nu_max = en_max + 1
 
     # Core cross-linker nodes
     core_nodes = np.arange(n, dtype=int)
@@ -392,27 +396,33 @@ def abelp_network_topology_initialization(
                 chn = int(np.floor(chn_end/2))
                 chn_end_0 = int(chn_end%2)
                 chn_end_1 = 1 - chn_end_0
-                # If this chain has not yet been instantiated, then
-                # randomly select an active site from the core nodes to
-                # instantiate the chain
+                # This chain has not yet been instantiated
                 if (edges[chn, 0] == np.inf) and (edges[chn, 1] == np.inf):
-                    core_node_active_site_indx = rng.integers(
-                        np.shape(core_nodes_active_sites)[0], dtype=int)
-                    core_node = (
-                        core_nodes_active_sites[core_node_active_site_indx]
-                    )
-                    # Instantiate the chain at one end
-                    edges[chn, chn_end_0] = core_node
-                    # Update inactive sites, anti-degree, active core
-                    # cross-linker nodes, and the sampling neighborhood
-                    # list for the parent core cross-linker node
-                    (core_nodes_active_sites, core_nodes_active_sites_num, 
-                     core_nodes_anti_k, core_nodes_nghbrhd,
-                     r_core_nodes_nghbrhd) = core_node_update_func(
-                         core_node, core_node_active_site_indx,
-                         core_nodes_active_sites, core_nodes_active_sites_num,
-                         core_nodes_anti_k, core_nodes, core_to_pb_nodes,
-                         core_nodes_nghbrhd, r_core_nodes_nghbrhd)
+                    # Check if the core node active sites have all
+                    # become occupied. If so, then the chain is a free
+                    # chain.
+                    if core_nodes_active_sites_num == 0: continue
+                    else:
+                        # Randomly select an active site from the core
+                        # nodes to instantiate the chain
+                        core_node_active_site_indx = rng.integers(
+                            np.shape(core_nodes_active_sites)[0], dtype=int)
+                        core_node = (
+                            core_nodes_active_sites[core_node_active_site_indx]
+                        )
+                        # Instantiate the chain at one end
+                        edges[chn, chn_end_0] = core_node
+                        # Update inactive sites, anti-degree, active
+                        # core cross-linker nodes, and the sampling
+                        # neighborhood list for the parent core
+                        # cross-linker node
+                        (core_nodes_active_sites, core_nodes_active_sites_num, 
+                        core_nodes_anti_k, core_nodes_nghbrhd,
+                        r_core_nodes_nghbrhd) = core_node_update_func(
+                            core_node, core_node_active_site_indx,
+                            core_nodes_active_sites, core_nodes_active_sites_num,
+                            core_nodes_anti_k, core_nodes, core_to_pb_nodes,
+                            core_nodes_nghbrhd, r_core_nodes_nghbrhd)
                 # Otherwise, the chain has previously been instantiated
                 else:
                     # Extract sampling neighborhood about the
@@ -537,6 +547,7 @@ def abelp_network_topology_initialization(
 
     # Convert edges and edges type lists to np.ndarrays
     conn_edges = np.asarray(conn_edges, dtype=int)
+    if np.ndim(conn_edges) == 1: conn_edges = np.expand_dims(conn_edges, axis=0)
     conn_edges_type = np.asarray(conn_edges_type, dtype=int)
     conn_dnglng_edges = np.asarray(conn_dnglng_edges, dtype=int)
     conn_dnglng_edges_type = np.asarray(conn_dnglng_edges_type, dtype=int)
@@ -618,6 +629,7 @@ def abelp_network_topology(
         dim: int,
         b: float,
         xi: float,
+        chi: float,
         k: int,
         n: int,
         p: float,
@@ -642,6 +654,7 @@ def abelp_network_topology(
         dim (int): Physical dimensionality of the network; either 2 or 3 (for two-dimensional or three-dimensional networks).
         b (float): Chain segment and/or cross-linker diameter.
         xi (float): Chain-to-cross-link connection probability.
+        chi (float): Stoichiometric imbalance between the number of cross-linker sites and the number of chain ends.
         k (int): Maximum cross-linker degree/functionality; either 3, 4, 5, 6, 7, or 8.
         n (int): Number of core cross-linkers.
         p (float): Probability that a chain is composed of nu_min segments (and p-1 is the probability that a chain is composed of nu_max segments).
@@ -663,5 +676,5 @@ def abelp_network_topology(
         )
         raise ValueError(error_str)
     abelp_network_topology_initialization(
-        network, date, batch, sample, scheme, dim, b, xi, k, n, p,
+        network, date, batch, sample, scheme, dim, b, xi, chi, k, n, p,
         en_min, en_max, config, max_try)

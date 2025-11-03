@@ -3,9 +3,12 @@ from src.networks.aelp_networks import (
     aelp_network_additional_node_seeding,
     aelp_network_additional_nodes_type,
     aelp_network_hilbert_node_label_assignment,
+    aelp_network_multiedge_order_segregation,
     aelp_network_local_topological_descriptor,
+    aelp_network_local_multiedge_order_topological_descriptor,
     aelp_network_global_topological_descriptor,
-    aelp_network_global_morphological_descriptor
+    aelp_network_global_morphological_descriptor,
+    aelp_network_global_property_descriptor
 )
 from src.networks.auelp_networks import auelp_network_topology
 from src.networks.abelp_networks import abelp_network_topology
@@ -42,11 +45,20 @@ def run_aelp_network_additional_nodes_type(args):
 def run_aelp_network_hilbert_node_label_assignment(args):
     aelp_network_hilbert_node_label_assignment(*args)
 
+def run_aelp_network_multiedge_order_segregation(args):
+    aelp_network_multiedge_order_segregation(*args)
+
 def run_aelp_network_local_topological_descriptor(args):
     aelp_network_local_topological_descriptor(*args)
+
+def run_aelp_network_local_multiedge_order_topological_descriptor(args):
+    aelp_network_local_multiedge_order_topological_descriptor(*args)
 
 def run_aelp_network_global_topological_descriptor(args):
     aelp_network_global_topological_descriptor(*args)
 
 def run_aelp_network_global_morphological_descriptor(args):
     aelp_network_global_morphological_descriptor(*args)
+
+def run_aelp_network_global_property_descriptor(args):
+    aelp_network_global_property_descriptor(*args)

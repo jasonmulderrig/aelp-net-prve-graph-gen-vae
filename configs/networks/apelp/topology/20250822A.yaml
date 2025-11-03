@@ -1,0 +1,31 @@
+dim:
+  - 3
+b:
+  - 1.0
+xi:
+  - 0.9
+  - 0.925
+  - 0.95
+chi:
+  - 0.9
+  - 1.0
+  - 1.1
+rho_en:
+  - 0.85
+k:
+  - 4
+n:
+  - 100
+# en = list[list[en_mean, en_max]]
+# type(en) = list[list[int, int]]
+en:
+  -
+    - 4
+    - 499
+  -
+    - 9
+    - 499
+  -
+    - 49
+    - 499
+config: 300

@@ -120,7 +120,7 @@ def mic_func(coords: np.ndarray, L: np.ndarray) -> np.ndarray:
     coords = np.where(coords>=L, coords-L, coords)
     return coords
 
-def L_max_func(L: np.ndarray)-> float:
+def L_max_func(L: np.ndarray) -> float:
     """Maximum simulation box length.
     
     This function calculates the maximum simulation box length.
@@ -133,7 +133,7 @@ def L_max_func(L: np.ndarray)-> float:
     """
     return np.max(L)
 
-def L_diag_max_func(L: np.ndarray)-> float:
+def L_diag_max_func(L: np.ndarray) -> float:
     """Maximum simulation box diagonal length.
     
     This function calculates the maximum simulation box diagonal length.

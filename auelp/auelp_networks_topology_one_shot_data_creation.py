@@ -50,17 +50,17 @@ def main(cfg: DictConfig) -> None:
 
     if sample_params_arr.ndim == 1:
         L_params_arr = (
-            sample_params_arr[[0, 1, 4, 5, 6, 7]]
-        ) # sample, dim, rho_en, k, n, en
+            sample_params_arr[[0, 1, 4, 5, 6, 7, 8]]
+        ) # sample, dim, chi, rho_en, k, n, en
     else:
         L_params_arr = (
-            sample_params_arr[:, [0, 1, 4, 5, 6, 7]]
-        ) # sample, dim, rho_en, k, n, en
+            sample_params_arr[:, [0, 1, 4, 5, 6, 7, 8]]
+        ) # sample, dim, chi, rho_en, k, n, en
     L_params_list = params_list_func(L_params_arr)
     L_args = (
         [
-            (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), int(dim), rho_en, int(k), int(n), int(en))
-            for (sample, dim, rho_en, k, n, en) in L_params_list
+            (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), int(dim), chi, rho_en, int(k), int(n), int(en))
+            for (sample, dim, chi, rho_en, k, n, en) in L_params_list
         ]
     )
     random.shuffle(L_args)
@@ -73,7 +73,7 @@ def main(cfg: DictConfig) -> None:
     print("Performing the initial node seeding", flush=True)
 
     initial_node_seeding_params_arr = (
-        sample_config_params_arr[:, [0, 1, 2, 6, 8]]
+        sample_config_params_arr[:, [0, 1, 2, 7, 9]]
     ) # sample, dim, b, n, config
     initial_node_seeding_params_list = params_list_func(
         initial_node_seeding_params_arr)
@@ -99,14 +99,14 @@ def main(cfg: DictConfig) -> None:
         
         for indx in range(sample_config_num):
             sample = int(sample_config_params_arr[indx, 0])
-            n = int(sample_config_params_arr[indx, 6])
-            config = int(sample_config_params_arr[indx, 8])
+            n = int(sample_config_params_arr[indx, 7])
+            config = int(sample_config_params_arr[indx, 9])
             
             coords_filename = (
                 config_filename_str(cfg.label.network, cfg.label.date, cfg.label.batch, sample, config)
                 + ".coords"
             )
-            coords = np.loadtxt(coords_filename)
+            coords = np.loadtxt(coords_filename, ndmin=1)
             
             if np.shape(coords)[0] == n: prhd_n_vs_n[indx] = 1
             else: pass
@@ -117,7 +117,7 @@ def main(cfg: DictConfig) -> None:
         
         if np.shape(sample_config_params_prhd_n_neq_n)[0] == 0:
             print_str = (
-                "Success! prhd_n = n  for all auelp network parameters!"
+                "Success! prhd_n = n for all auelp network parameters!"
             )
             print(print_str, flush=True)
         elif np.shape(sample_config_params_prhd_n_neq_n)[0] > 0:
@@ -139,13 +139,13 @@ def main(cfg: DictConfig) -> None:
     print(print_str, flush=True)
 
     topology_params_arr = (
-        np.delete(sample_config_params_arr, 4, axis=1)
-    ) # sample, dim, b, xi, k, n, en, config
+        np.delete(sample_config_params_arr, 5, axis=1)
+    ) # sample, dim, b, xi, chi, k, n, en, config
     topology_params_list = params_list_func(topology_params_arr)
     topology_args = (
         [
-            (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), cfg.label.scheme, int(dim), b, xi, int(k), int(n), int(en), int(config), int(cfg.synthesis.max_try))
-            for (sample, dim, b, xi, k, n, en, config) in topology_params_list
+            (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), cfg.label.scheme, int(dim), b, xi, chi, int(k), int(n), int(en), int(config), int(cfg.synthesis.max_try))
+            for (sample, dim, b, xi, chi, k, n, en, config) in topology_params_list
         ]
     )
     random.shuffle(topology_args)
@@ -170,7 +170,7 @@ def main(cfg: DictConfig) -> None:
                 aelp_filename_str(cfg.label.network, cfg.label.date, cfg.label.batch, sample, config)
                 + ".coords"
             )
-            coords = np.loadtxt(coords_filename)
+            coords = np.loadtxt(coords_filename, ndmin=1)
             sample_n_coords = np.concatenate(
                 (sample_n_coords, np.asarray([np.shape(coords)[0]])),
                 dtype=int)
@@ -180,14 +180,14 @@ def main(cfg: DictConfig) -> None:
     sample_config_addtnl_n_params_arr = sample_config_params_arr.copy()
     for indx in range(sample_config_num):
         sample = int(sample_config_addtnl_n_params_arr[indx, 0])
-        sample_config_addtnl_n_params_arr[indx, 6] = sample_n_coords_max[sample]
+        sample_config_addtnl_n_params_arr[indx, 7] = sample_n_coords_max[sample]
     
     auelp_network_additional_node_seeding_params_list = params_list_func(
         sample_config_addtnl_n_params_arr)
     auelp_network_additional_node_seeding_args = (
         [
             (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), cfg.label.scheme, int(dim), float(b), int(n), int(config), int(cfg.synthesis.max_try))
-            for (sample, dim, b, _, _, _, n, _, config) in auelp_network_additional_node_seeding_params_list
+            for (sample, dim, b, _, _, _, _, n, _, config) in auelp_network_additional_node_seeding_params_list
         ]
     )
     random.shuffle(auelp_network_additional_node_seeding_args)
@@ -207,7 +207,7 @@ def main(cfg: DictConfig) -> None:
     auelp_network_additional_nodes_type_args = (
         [
             (cfg.label.network, cfg.label.date, cfg.label.batch, int(sample), int(n), int(config))
-            for (sample, _, _, _, _, _, n, _, config) in auelp_network_additional_nodes_type_params_list
+            for (sample, _, _, _, _, _, _, n, _, config) in auelp_network_additional_nodes_type_params_list
         ]
     )
     random.shuffle(auelp_network_additional_nodes_type_args)
@@ -224,7 +224,7 @@ def main(cfg: DictConfig) -> None:
         flush=True)
 
     auelp_network_hilbert_node_label_assignment_params_arr = (
-        sample_config_params_arr[:, [0, 8]]
+        sample_config_params_arr[:, [0, 9]]
     ) # sample, config
     auelp_network_hilbert_node_label_assignment_params_list = params_list_func(
         auelp_network_hilbert_node_label_assignment_params_arr)
@@ -335,30 +335,30 @@ def main(cfg: DictConfig) -> None:
             graph_filename = aelp_filename + ".npz"
 
             # Load in graph data
-            L = np.loadtxt(L_filename)
-            orgnl_coords = np.loadtxt(orgnl_coords_filename)
-            coords = np.loadtxt(coords_filename)
-            core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int)
-            conn_edges = np.loadtxt(conn_edges_filename, dtype=int)
-            conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int)
-            l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename)
-            lcl_k = np.loadtxt(lcl_k_filename, dtype=int)
-            lcl_k_diff = np.loadtxt(lcl_k_diff_filename, dtype=int)
-            lcl_avrg_nn_k = np.loadtxt(lcl_avrg_nn_k_filename)
-            lcl_lcl_avrg_kappa = np.loadtxt(lcl_lcl_avrg_kappa_filename)
-            lcl_l = np.loadtxt(lcl_l_filename)
-            lcl_l_naive = np.loadtxt(lcl_l_naive_filename)
-            eeel_glbl_mean_k = np.asarray(
-                [np.loadtxt(eeel_glbl_mean_k_filename)])
-            glbl_prop_eeel_n = np.asarray(
-                [np.loadtxt(glbl_prop_eeel_n_filename)])
-            glbl_prop_eeel_m = np.asarray(
-                [np.loadtxt(glbl_prop_eeel_m_filename)])
-            eeel_glbl_mean_gamma = np.asarray(
-                [np.loadtxt(eeel_glbl_mean_gamma_filename)])
-            glbl_n_fractal_dim = np.asarray(
-                [np.loadtxt(glbl_n_fractal_dim_filename)])
-            glbl_xi_corr = np.asarray([np.loadtxt(glbl_xi_corr_filename)])
+            L = np.loadtxt(L_filename, ndmin=1)
+            orgnl_coords = np.loadtxt(orgnl_coords_filename, ndmin=1)
+            coords = np.loadtxt(coords_filename, ndmin=1)
+            core_nodes_type = np.loadtxt(
+                core_nodes_type_filename, dtype=int, ndmin=1)
+            conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+            conn_edges_type = np.loadtxt(
+                conn_edges_type_filename, dtype=int, ndmin=1)
+            l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename, ndmin=1)
+            lcl_k = np.loadtxt(lcl_k_filename, dtype=int, ndmin=1)
+            lcl_k_diff = np.loadtxt(lcl_k_diff_filename, dtype=int, ndmin=1)
+            lcl_avrg_nn_k = np.loadtxt(lcl_avrg_nn_k_filename, ndmin=1)
+            lcl_lcl_avrg_kappa = np.loadtxt(
+                lcl_lcl_avrg_kappa_filename, ndmin=1)
+            lcl_l = np.loadtxt(lcl_l_filename, ndmin=1)
+            lcl_l_naive = np.loadtxt(lcl_l_naive_filename, ndmin=1)
+            eeel_glbl_mean_k = np.loadtxt(eeel_glbl_mean_k_filename, ndmin=1)
+            glbl_prop_eeel_n = np.loadtxt(glbl_prop_eeel_n_filename, ndmin=1)
+            glbl_prop_eeel_m = np.loadtxt(glbl_prop_eeel_m_filename, ndmin=1)
+            eeel_glbl_mean_gamma = np.loadtxt(
+                eeel_glbl_mean_gamma_filename, ndmin=1)
+            glbl_n_fractal_dim = np.loadtxt(
+                glbl_n_fractal_dim_filename, ndmin=1)
+            glbl_xi_corr = np.loadtxt(glbl_xi_corr_filename, ndmin=1)
 
             # Save graph data in an .npz file
             np.savez(

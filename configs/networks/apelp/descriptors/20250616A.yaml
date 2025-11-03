@@ -1,0 +1,49 @@
+# local_topological_descriptors = list[list[tplgcl_dscrptr, eeel_ntwrk, save_result, return_result]]
+# type(local_topological_descriptors) = list[list[str, bool, bool, bool]]
+# global_property_descriptors = list[list[prprty_dscrptr, save_result, return_result]]
+# type(global_property_descriptors) = list[list[str, bool, bool]]
+local_topological_descriptors:
+  -
+    - "k"
+    - False
+    - True
+    - False
+  -
+    - "k_diff"
+    - False
+    - True
+    - False
+  -
+    - "c"
+    - False
+    - True
+    - False
+  -
+    - "avrg_nn_k"
+    - False
+    - True
+    - False
+  -
+    - "lcl_avrg_kappa"
+    - False
+    - True
+    - False
+  -
+    - "l"
+    - False
+    - True
+    - False
+  -
+    - "l_naive"
+    - False
+    - True
+    - False
+global_property_descriptors:
+  -
+    - "eeel_dobrynin_kappa"
+    - True
+    - False
+  -
+    - "eeel_glbl_mean_gamma"
+    - True
+    - False

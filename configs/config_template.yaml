@@ -1,0 +1,7 @@
+defaults:
+  - networks/apelp/apelp_networks
+  - general: 20250828C
+  - model: 20250828C
+  - train: 20250828C
+  - _self_
+label: 20250828C

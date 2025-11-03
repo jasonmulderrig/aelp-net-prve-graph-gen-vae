@@ -33,12 +33,12 @@ def main(cfg: DictConfig) -> None:
         lcl_l_naive = np.asarray([])
         nrmlzd_lcl_l = np.asarray([])
         nrmlzd_lcl_l_naive = np.asarray([])
-        eeel_glbl_mean_k = np.asarray([])
-        glbl_prop_eeel_n = np.asarray([])
-        glbl_prop_eeel_m = np.asarray([])
-        eeel_glbl_mean_gamma = np.asarray([])
-        glbl_n_fractal_dim = np.asarray([])
-        glbl_xi_corr = np.asarray([])
+        # eeel_glbl_mean_k = np.asarray([])
+        # glbl_prop_eeel_n = np.asarray([])
+        # glbl_prop_eeel_m = np.asarray([])
+        # eeel_glbl_mean_gamma = np.asarray([])
+        # glbl_n_fractal_dim = np.asarray([])
+        # glbl_xi_corr = np.asarray([])
         
         # Generate filenames
         filename = filename_str(
@@ -59,16 +59,16 @@ def main(cfg: DictConfig) -> None:
         nrmlzd_lcl_l_naive_plt_filename = (
             filename + "-nrmlzd-lcl-l_naive" + ".png"
         )
-        eeel_glbl_mean_k_plt_filename = filename + "-eeel-glbl-mean-k" + ".png"
-        glbl_prop_eeel_n_plt_filename = filename + "-glbl-prop_eeel_n" + ".png"
-        glbl_prop_eeel_m_plt_filename = filename + "-glbl-prop_eeel_m" + ".png"
-        eeel_glbl_mean_gamma_plt_filename = (
-            filename + "-eeel-glbl-mean-gamma" + ".png"
-        )
-        glbl_n_fractal_dim_plt_filename = (
-            filename + "-glbl-n_fractal_dim" + ".png"
-        )
-        glbl_xi_corr_plt_filename = filename + "-glbl-xi_corr" + ".png"
+        # eeel_glbl_mean_k_plt_filename = filename + "-eeel-glbl-mean-k" + ".png"
+        # glbl_prop_eeel_n_plt_filename = filename + "-glbl-prop_eeel_n" + ".png"
+        # glbl_prop_eeel_m_plt_filename = filename + "-glbl-prop_eeel_m" + ".png"
+        # eeel_glbl_mean_gamma_plt_filename = (
+        #     filename + "-eeel-glbl-mean-gamma" + ".png"
+        # )
+        # glbl_n_fractal_dim_plt_filename = (
+        #     filename + "-glbl-n_fractal_dim" + ".png"
+        # )
+        # glbl_xi_corr_plt_filename = filename + "-glbl-xi_corr" + ".png"
         
         for config in range(cfg.topology.config):
             aelp_filename = aelp_filename_str(
@@ -95,17 +95,17 @@ def main(cfg: DictConfig) -> None:
             nrmlzd_lcl_l = np.concatenate((nrmlzd_lcl_l, graph["lcl_l"]/l_max))
             nrmlzd_lcl_l_naive = np.concatenate(
                 (nrmlzd_lcl_l_naive, graph["lcl_l_naive"]/l_max))
-            eeel_glbl_mean_k = np.concatenate(
-                (eeel_glbl_mean_k, graph["eeel_glbl_mean_k"]))
-            glbl_prop_eeel_n = np.concatenate(
-                (glbl_prop_eeel_n, graph["glbl_prop_eeel_n"]))
-            glbl_prop_eeel_m = np.concatenate(
-                (glbl_prop_eeel_m, graph["glbl_prop_eeel_m"]))
-            eeel_glbl_mean_gamma = np.concatenate(
-                (eeel_glbl_mean_gamma, graph["eeel_glbl_mean_gamma"]))
-            glbl_n_fractal_dim = np.concatenate(
-                (glbl_n_fractal_dim, graph["glbl_n_fractal_dim"]))
-            glbl_xi_corr = np.concatenate((glbl_xi_corr, graph["glbl_xi_corr"]))
+            # eeel_glbl_mean_k = np.concatenate(
+            #     (eeel_glbl_mean_k, graph["eeel_glbl_mean_k"]))
+            # glbl_prop_eeel_n = np.concatenate(
+            #     (glbl_prop_eeel_n, graph["glbl_prop_eeel_n"]))
+            # glbl_prop_eeel_m = np.concatenate(
+            #     (glbl_prop_eeel_m, graph["glbl_prop_eeel_m"]))
+            # eeel_glbl_mean_gamma = np.concatenate(
+            #     (eeel_glbl_mean_gamma, graph["eeel_glbl_mean_gamma"]))
+            # glbl_n_fractal_dim = np.concatenate(
+            #     (glbl_n_fractal_dim, graph["glbl_n_fractal_dim"]))
+            # glbl_xi_corr = np.concatenate((glbl_xi_corr, graph["glbl_xi_corr"]))
         
         # Plot histograms of graph data
         data_histogram_plotter(
@@ -128,20 +128,20 @@ def main(cfg: DictConfig) -> None:
         data_histogram_plotter(
             nrmlzd_lcl_l_naive, "auto", "l_naive_nrmlzd",
             nrmlzd_lcl_l_naive_plt_filename)
-        data_histogram_plotter(
-            eeel_glbl_mean_k, "auto", "mean_k", eeel_glbl_mean_k_plt_filename)
-        data_histogram_plotter(
-            glbl_prop_eeel_n, "auto", "eeel_n/n", glbl_prop_eeel_n_plt_filename)
-        data_histogram_plotter(
-            glbl_prop_eeel_m, "auto", "eeel_m/m", glbl_prop_eeel_m_plt_filename)
-        data_histogram_plotter(
-            eeel_glbl_mean_gamma, "auto", "mean_gamma",
-            eeel_glbl_mean_gamma_plt_filename)
-        data_histogram_plotter(
-            glbl_n_fractal_dim, "auto", "n_fractal_dim",
-            glbl_n_fractal_dim_plt_filename)
-        data_histogram_plotter(
-            glbl_xi_corr, "auto", "xi_corr", glbl_xi_corr_plt_filename)
+        # data_histogram_plotter(
+        #     eeel_glbl_mean_k, "auto", "mean_k", eeel_glbl_mean_k_plt_filename)
+        # data_histogram_plotter(
+        #     glbl_prop_eeel_n, "auto", "eeel_n/n", glbl_prop_eeel_n_plt_filename)
+        # data_histogram_plotter(
+        #     glbl_prop_eeel_m, "auto", "eeel_m/m", glbl_prop_eeel_m_plt_filename)
+        # data_histogram_plotter(
+        #     eeel_glbl_mean_gamma, "auto", "mean_gamma",
+        #     eeel_glbl_mean_gamma_plt_filename)
+        # data_histogram_plotter(
+        #     glbl_n_fractal_dim, "auto", "n_fractal_dim",
+        #     glbl_n_fractal_dim_plt_filename)
+        # data_histogram_plotter(
+        #     glbl_xi_corr, "auto", "xi_corr", glbl_xi_corr_plt_filename)
 
 if __name__ == "__main__":
     import time

@@ -8,105 +8,200 @@ import hydra
 from omegaconf import DictConfig
 import numpy as np
 from src.file_io.file_io import L_filename_str
-from src.networks.aelp_networks import aelp_filename_str
-from src.networks.apelp_networks_config import sample_params_arr_func
+from src.networks.aelp_networks import (
+    aelp_filename_str,
+    aelp_multiedge_max
+)
+from src.networks.apelp_networks_config import (
+    sample_params_arr_func,
+    sample_config_params_arr_func
+)
+from src.models.apelp_networks_dataset import valid_params
 
 @hydra.main(
         version_base=None,
         config_path="../configs/networks/apelp",
         config_name="apelp_networks")
 def main(cfg: DictConfig) -> None:
+    # Gather arrays of configuration parameters
     _, sample_num = sample_params_arr_func(cfg)
-    
-    ##### Gather and save data components for each sample in .npz files
-    print("Gather and save data components for each sample in .npz files", flush=True)
+    sample_config_params_arr, sample_config_num = sample_config_params_arr_func(
+        cfg)
 
+    ##### Gather and save data components for each sample in .npz files
+    print(
+        "Gather and save data components for each sample in .npz files",
+        flush=True)
+
+    # Validate artificial polydisperse end-linked polymer network
+    # topology parameters
+    dim, b, rho_en, k, n, en_max, multiedge_max = valid_params(cfg)
+    
+    # Calculate the mean simulation box side lengths
+    L = np.empty((sample_num, dim))
     for sample in range(sample_num):
-        # Generate filenames
+        # Load in simulation box side lengths
         L_filename = L_filename_str(
             cfg.label.network, cfg.label.date, cfg.label.batch, sample)
-        for config in range(cfg.topology.config):
-            aelp_filename = aelp_filename_str(
-                cfg.label.network, cfg.label.date, cfg.label.batch, sample,
-                config)
-            orgnl_coords_filename = aelp_filename + "_orgnl" + ".coords"
-            coords_filename = aelp_filename + ".coords"
-            core_nodes_type_filename = (
-                aelp_filename + "-core_nodes_type" + ".dat"
-            )
-            conn_edges_filename = aelp_filename + "-conn_edges" + ".dat"
-            conn_edges_type_filename = (
-                aelp_filename + "-conn_edges_type" + ".dat"
-            )
-            l_cntr_conn_edges_filename = (
-                aelp_filename + "-l_cntr_conn_edges" + ".dat"
-            )
-            lcl_k_filename = aelp_filename + "-lcl-k" + ".dat"
-            lcl_k_diff_filename = aelp_filename + "-lcl-k_diff" + ".dat"
-            lcl_avrg_nn_k_filename = aelp_filename + "-lcl-avrg_nn_k" + ".dat"
-            lcl_lcl_avrg_kappa_filename = (
-                aelp_filename + "-lcl-lcl_avrg_kappa" + ".dat"
-            )
-            lcl_l_filename = aelp_filename + "-lcl-l" + ".dat"
-            lcl_l_naive_filename = aelp_filename + "-lcl-l_naive" + ".dat"
-            eeel_glbl_mean_k_filename = (
-                aelp_filename + "-eeel-glbl-mean-k" + ".dat"
-            )
-            glbl_prop_eeel_n_filename = (
-                aelp_filename + "-glbl-prop_eeel_n" + ".dat"
-            )
-            glbl_prop_eeel_m_filename = (
-                aelp_filename + "-glbl-prop_eeel_m" + ".dat"
-            )
-            eeel_glbl_mean_gamma_filename = (
-                aelp_filename + "-eeel-glbl-mean-gamma" + ".dat"
-            )
-            glbl_n_fractal_dim_filename = (
-                aelp_filename + "-glbl-n_fractal_dim" + ".dat"
-            )
-            glbl_xi_corr_filename = aelp_filename + "-glbl-xi_corr" + ".dat"
-            graph_filename = aelp_filename + ".npz"
+        L[sample] = np.loadtxt(L_filename, ndmin=1)
+    L_mean = np.mean(L, axis=0)
 
-            # Load in graph data
-            L = np.loadtxt(L_filename)
-            orgnl_coords = np.loadtxt(orgnl_coords_filename)
-            coords = np.loadtxt(coords_filename)
-            core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int)
-            conn_edges = np.loadtxt(conn_edges_filename, dtype=int)
-            conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int)
-            l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename)
-            lcl_k = np.loadtxt(lcl_k_filename, dtype=int)
-            lcl_k_diff = np.loadtxt(lcl_k_diff_filename, dtype=int)
-            lcl_avrg_nn_k = np.loadtxt(lcl_avrg_nn_k_filename)
-            lcl_lcl_avrg_kappa = np.loadtxt(lcl_lcl_avrg_kappa_filename)
-            lcl_l = np.loadtxt(lcl_l_filename)
-            lcl_l_naive = np.loadtxt(lcl_l_naive_filename)
-            eeel_glbl_mean_k = np.asarray(
-                [np.loadtxt(eeel_glbl_mean_k_filename)])
-            glbl_prop_eeel_n = np.asarray(
-                [np.loadtxt(glbl_prop_eeel_n_filename)])
-            glbl_prop_eeel_m = np.asarray(
-                [np.loadtxt(glbl_prop_eeel_m_filename)])
-            eeel_glbl_mean_gamma = np.asarray(
-                [np.loadtxt(eeel_glbl_mean_gamma_filename)])
-            glbl_n_fractal_dim = np.asarray(
-                [np.loadtxt(glbl_n_fractal_dim_filename)])
-            glbl_xi_corr = np.asarray([np.loadtxt(glbl_xi_corr_filename)])
+    # Gather and save data components
+    for indx in range(sample_config_num):
+        # Initialize graph data and filenames dictionaries
+        graph_data = {}
+        graph_data_filenames = {}
 
-            # Save graph data in an .npz file
-            np.savez(
-                graph_filename, L=L, orgnl_coords=orgnl_coords, coords=coords,
-                core_nodes_type=core_nodes_type, conn_edges=conn_edges,
-                conn_edges_type=conn_edges_type,
-                l_cntr_conn_edges=l_cntr_conn_edges, lcl_k=lcl_k,
-                lcl_k_diff=lcl_k_diff, lcl_avrg_nn_k=lcl_avrg_nn_k,
-                lcl_lcl_avrg_kappa=lcl_lcl_avrg_kappa, lcl_l=lcl_l,
-                lcl_l_naive=lcl_l_naive, eeel_glbl_mean_k=eeel_glbl_mean_k,
-                glbl_prop_eeel_n=glbl_prop_eeel_n,
-                glbl_prop_eeel_m=glbl_prop_eeel_m,
-                eeel_glbl_mean_gamma=eeel_glbl_mean_gamma,
-                glbl_n_fractal_dim=glbl_n_fractal_dim,
-                glbl_xi_corr=glbl_xi_corr)
+        # Gather sample and config number
+        sample = int(sample_config_params_arr[indx, 0])
+        config = int(sample_config_params_arr[indx, 10])
+
+        # Collect the synthesis processing parameter values
+        graph_data["xi"] = np.asarray([sample_config_params_arr[indx, 3]])
+        graph_data["chi"] = np.asarray([sample_config_params_arr[indx, 4]])
+        graph_data["en_mean"] = np.asarray([sample_config_params_arr[indx, 8]])
+
+        # Load in simulation box side lengths, and collect simulation
+        # box side lengths and the mean simulation box side lengths
+        L_filename = L_filename_str(
+            cfg.label.network, cfg.label.date, cfg.label.batch, sample)
+        graph_data["L"] = np.loadtxt(L_filename, ndmin=1)
+        graph_data["L_mean"] = L_mean
+
+        # Generate filenames
+        aelp_filename = aelp_filename_str(
+            cfg.label.network, cfg.label.date, cfg.label.batch, sample,
+            config)
+        graph_filename = aelp_filename + ".npz"
+        
+        graph_data_filenames["orgnl_coords"] = (
+            aelp_filename + "_orgnl" + ".coords"
+        )
+        graph_data_filenames["coords"] = aelp_filename + ".coords"
+        graph_data_filenames["core_nodes_type"] = (
+            aelp_filename + "-core_nodes_type" + ".dat"
+        )
+        graph_data_filenames["conn_edges"] = (
+            aelp_filename + "-conn_edges" + ".dat"
+        )
+        graph_data_filenames["conn_edges_type"] = (
+            aelp_filename + "-conn_edges_type" + ".dat"
+        )
+        graph_data_filenames["l_cntr_conn_edges"] = (
+            aelp_filename + "-l_cntr_conn_edges" + ".dat"
+        )
+        graph_data_filenames["lcl_k"] = aelp_filename + "-lcl-k" + ".dat"
+        graph_data_filenames["lcl_k_diff"] = (
+            aelp_filename + "-lcl-k_diff" + ".dat"
+        )
+        graph_data_filenames["lcl_c"] = aelp_filename + "-lcl-c" + ".dat"
+        graph_data_filenames["lcl_avrg_nn_k"] = (
+            aelp_filename + "-lcl-avrg_nn_k" + ".dat"
+        )
+        graph_data_filenames["lcl_lcl_avrg_kappa"] = (
+            aelp_filename + "-lcl-lcl_avrg_kappa" + ".dat"
+        )
+        graph_data_filenames["lcl_l"] = aelp_filename + "-lcl-l" + ".dat"
+        graph_data_filenames["lcl_l_naive"] = (
+            aelp_filename + "-lcl-l_naive" + ".dat"
+        )
+        for multiedge in range(multiedge_max):
+            graph_data_filenames["conn_edges_"+str(multiedge)] = (
+                aelp_filename + "-conn_edges_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["conn_edges_type_"+str(multiedge)] = (
+                aelp_filename + "-conn_edges_type_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["l_cntr_conn_edges_"+str(multiedge)] = (
+                aelp_filename + "-l_cntr_conn_edges_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["lcl_k_"+str(multiedge)] = (
+                aelp_filename + "-lcl-k_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["lcl_k_diff_"+str(multiedge)] = (
+                aelp_filename + "-lcl-k_diff_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["lcl_c_"+str(multiedge)] = (
+                aelp_filename + "-lcl-c_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["lcl_avrg_nn_k_"+str(multiedge)] = (
+                aelp_filename + "-lcl-avrg_nn_k_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["lcl_lcl_avrg_kappa_"+str(multiedge)] = (
+                aelp_filename + "-lcl-lcl_avrg_kappa_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["lcl_l_"+str(multiedge)] = (
+                aelp_filename + "-lcl-l_" + str(multiedge) + ".dat"
+            )
+            graph_data_filenames["lcl_l_naive_"+str(multiedge)] = (
+                aelp_filename + "-lcl-l_naive_" + str(multiedge) + ".dat"
+            )
+        graph_data_filenames["eeel_dobrynin_kappa"] = (
+            aelp_filename + "-eeel_dobrynin_kappa" + ".dat"
+        )
+        graph_data_filenames["eeel_glbl_mean_gamma"] = (
+            aelp_filename + "-eeel_glbl_mean_gamma" + ".dat"
+        )
+        
+        # Load in graph data
+        graph_data["orgnl_coords"] = np.loadtxt(
+            graph_data_filenames["orgnl_coords"], ndmin=1)
+        graph_data["coords"] = np.loadtxt(
+            graph_data_filenames["coords"], ndmin=1)
+        graph_data["core_nodes_type"] = np.loadtxt(
+            graph_data_filenames["core_nodes_type"], dtype=int, ndmin=1)
+        graph_data["conn_edges"] = np.loadtxt(
+            graph_data_filenames["conn_edges"], dtype=int, ndmin=1)
+        graph_data["conn_edges_type"] = np.loadtxt(
+            graph_data_filenames["conn_edges_type"], dtype=int, ndmin=1)
+        graph_data["l_cntr_conn_edges"] = np.loadtxt(
+            graph_data_filenames["l_cntr_conn_edges"], ndmin=1)
+        graph_data["lcl_k"] = np.loadtxt(
+            graph_data_filenames["lcl_k"], dtype=int, ndmin=1)
+        graph_data["lcl_k_diff"] = np.loadtxt(
+            graph_data_filenames["lcl_k_diff"], dtype=int, ndmin=1)
+        graph_data["lcl_c"] = np.loadtxt(graph_data_filenames["lcl_c"], ndmin=1)
+        graph_data["lcl_avrg_nn_k"] = np.loadtxt(
+            graph_data_filenames["lcl_avrg_nn_k"], ndmin=1)
+        graph_data["lcl_lcl_avrg_kappa"] = np.loadtxt(
+            graph_data_filenames["lcl_lcl_avrg_kappa"], ndmin=1)
+        graph_data["lcl_l"] = np.loadtxt(graph_data_filenames["lcl_l"], ndmin=1)
+        graph_data["lcl_l_naive"] = np.loadtxt(
+            graph_data_filenames["lcl_l_naive"], ndmin=1)
+        for multiedge in range(multiedge_max):
+            graph_data["conn_edges_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["conn_edges_"+str(multiedge)], dtype=int,
+                ndmin=1)
+            graph_data["conn_edges_type_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["conn_edges_type_"+str(multiedge)],
+                dtype=int, ndmin=1)
+            graph_data["l_cntr_conn_edges_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["l_cntr_conn_edges_"+str(multiedge)],
+                ndmin=1)
+            graph_data["lcl_k_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["lcl_k_"+str(multiedge)], dtype=int,
+                ndmin=1)
+            graph_data["lcl_k_diff_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["lcl_k_diff_"+str(multiedge)], dtype=int,
+                ndmin=1)
+            graph_data["lcl_c_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["lcl_c_"+str(multiedge)], ndmin=1)
+            graph_data["lcl_avrg_nn_k_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["lcl_avrg_nn_k_"+str(multiedge)], ndmin=1)
+            graph_data["lcl_lcl_avrg_kappa_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["lcl_lcl_avrg_kappa_"+str(multiedge)],
+                ndmin=1)
+            graph_data["lcl_l_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["lcl_l_"+str(multiedge)], ndmin=1)
+            graph_data["lcl_l_naive_"+str(multiedge)] = np.loadtxt(
+                graph_data_filenames["lcl_l_naive_"+str(multiedge)], ndmin=1)
+        graph_data["eeel_dobrynin_kappa"] = np.loadtxt(
+            graph_data_filenames["eeel_dobrynin_kappa"], ndmin=1)
+        graph_data["eeel_glbl_mean_gamma"] = np.loadtxt(
+            graph_data_filenames["eeel_glbl_mean_gamma"], ndmin=1)
+
+        # Save graph data in an .npz file
+        np.savez(graph_filename, **graph_data)
 
 if __name__ == "__main__":
     import time

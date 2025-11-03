@@ -26,6 +26,7 @@ def main(cfg: DictConfig) -> None:
     dim_3 = 3
     b = 1.0
     xi = 0.98
+    chi = 1.0
     rho_en = 0.85
     k = 4
     n = 100
@@ -34,9 +35,9 @@ def main(cfg: DictConfig) -> None:
 
     # Identification of the sample value for the desired network
     dim_2_sample = int(
-        np.where(np.all(params_arr == (dim_2, b, xi, rho_en, k, n, en), axis=1))[0][0])
+        np.where(np.all(params_arr == (dim_2, b, xi, chi, rho_en, k, n, en), axis=1))[0][0])
     dim_3_sample = int(
-        np.where(np.all(params_arr == (dim_3, b, xi, rho_en, k, n, en), axis=1))[0][0])
+        np.where(np.all(params_arr == (dim_3, b, xi, chi, rho_en, k, n, en), axis=1))[0][0])
 
     # Artificial uniform end-linked polymer network plotting
     aelp_network_topology_plotter(

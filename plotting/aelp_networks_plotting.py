@@ -68,25 +68,25 @@ def aelp_network_topology_plotter(
     conn_edges_type_filename = aelp_filename + "-conn_edges_type" + ".dat"
 
     # Load simulation box side lengths
-    L = np.loadtxt(L_filename_str(network, date, batch, sample))
+    L = np.loadtxt(L_filename_str(network, date, batch, sample), ndmin=1)
     L_max = np.max(L)
     L_x = L[0]
     L_y = L[1]
 
     # Load node coordinates
-    coords = np.loadtxt(coords_filename)
+    coords = np.loadtxt(coords_filename, ndmin=1)
     n, dim = np.shape(coords)
 
     # Load fundamental graph constituents
     core_nodes = np.arange(n, dtype=int)
-    core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int)
-    conn_edges = np.loadtxt(conn_edges_filename, dtype=int)
-    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int)
-    m = np.shape(conn_edges)[0]
+    core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int, ndmin=1)
+    conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int, ndmin=1)
     
     # Lexicographically sort the edges and the edges type
     conn_edges, lexsort_indcs = lexsorted_edges(conn_edges, return_indcs=True)
     conn_edges_type = conn_edges_type[lexsort_indcs]
+    m = np.shape(conn_edges)[0]
 
     # Create nx.MultiGraph and add nodes before edges
     conn_graph = nx.MultiGraph()

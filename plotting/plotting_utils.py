@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams["mathtext.fontset"] = "cm"
 
 def dim_2_network_topology_axes_formatter(
         ax: plt.axes,

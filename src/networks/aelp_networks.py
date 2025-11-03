@@ -4,7 +4,7 @@ from src.file_io.file_io import (
     config_filename_str
 )
 from src.helpers.polymer_network_utils import (
-    m_arg_stoich_func,
+    m_arg_n_func,
     n_en_arg_m_func
 )
 from src.helpers.simulation_box_utils import (
@@ -24,9 +24,65 @@ from src.helpers.node_placement_utils import (
 )
 from src.descriptors.network_descriptors import (
     network_local_topological_descriptor,
+    network_local_multiedge_order_topological_descriptor,
     network_global_topological_descriptor,
-    network_global_morphological_descriptor
+    network_global_morphological_descriptor,
+    network_global_property_descriptor
 )
+
+def aelp_multiedge_max(k: int) -> int:
+    """Maximum number of multiedges for artificial end-linked polymer
+    networks.
+
+    This function calculates the maximum number of multiedges for
+    artificial end-linked polymer networks.
+
+    Args:
+        k (int): Maximum cross-linker degree/functionality; either 3, 4, 5, 6, 7, or 8.
+    
+    Returns:
+        int: Maximum number of multiedges.
+    
+    """
+    return k - 1
+
+def nrmlzd_k_func(
+    descriptor: np.ndarray | float | int, k: int) -> np.ndarray | float:
+    return descriptor / k
+
+def dmnsnlzd_k_func(
+    descriptor: np.ndarray | float | int, k: int) -> np.ndarray | float:
+    return descriptor * k
+
+def nrmlzd_L_func(
+    descriptor: np.ndarray | float | int,
+    L: np.ndarray | float) -> np.ndarray | float:
+    return descriptor / L
+
+def dmnsnlzd_L_func(
+    descriptor: np.ndarray | float | int,
+    L: np.ndarray | float) -> np.ndarray | float:
+    return descriptor * L
+
+def nrmlzd_l_cntr_func(
+    descriptor: np.ndarray | float | int,
+    b: float,
+    l_cntr_max: float) -> np.ndarray | float:
+    return (descriptor-b) / (l_cntr_max-b)
+
+def dmnsnlzd_l_cntr_func(
+    descriptor: np.ndarray | float | int,
+    b: float,
+    l_cntr_max: float) -> np.ndarray | float:
+    return descriptor * (l_cntr_max-b) + b
+
+def nrmlzd_en_func(
+    descriptor: np.ndarray | float | int, en: int) -> np.ndarray | float:
+    return descriptor / en
+
+def dmnsnlzd_en_func(
+    descriptor: np.ndarray | float | int, en: int) -> np.ndarray | float:
+    return descriptor * en
 
 def aelp_filename_str(
         network: str,
@@ -71,6 +127,7 @@ def aelp_L(
         batch: str,
         sample: int,
         dim: int,
+        chi: float,
         rho_en: float,
         k: int,
         n: int,
@@ -87,6 +144,7 @@ def aelp_L(
         batch (str): Single capitalized letter (e.g., A, B, C, ...) indicating the batch label of the network sample data.
         sample (int): Label of a particular network in the batch.
         dim (int): Physical dimensionality of the network; either 2 or 3 (for two-dimensional or three-dimensional networks).
+        chi (float): Stoichiometric imbalance between the number of cross-linker sites and the number of chain ends.
         rho_en (float): Segment particle number density.
         k (int): Maximum cross-linker degree/functionality; either 3, 4, 5, 6, 7, or 8.
         n (int): Intended number of core cross-linkers.
@@ -105,9 +163,9 @@ def aelp_L(
         )
         raise ValueError(error_str)
     
-    # Calculate the stoichiometric (average) number of chain segment
-    # particles in the simulation box
-    n_en = n_en_arg_m_func(m_arg_stoich_func(n, k), en)
+    # Calculate the (average) number of chain segment particles in the
+    # simulation box
+    n_en = n_en_arg_m_func(m_arg_n_func(n, k, chi), en)
 
     # Calculate and save L
     np.savetxt(
@@ -470,7 +528,7 @@ def aelp_network_hilbert_node_label_assignment(
         raise ValueError(error_str)
     
     # Load simulation box side lengths
-    L = np.loadtxt(L_filename_str(network, date, batch, sample))
+    L = np.loadtxt(L_filename_str(network, date, batch, sample), ndmin=1)
 
     # Generate filenames
     aelp_filename = aelp_filename_str(network, date, batch, sample, config)
@@ -482,14 +540,14 @@ def aelp_network_hilbert_node_label_assignment(
     orgnl_coords_filename = aelp_filename + "_orgnl" + ".coords"
 
     # Load node coordinates
-    coords = np.loadtxt(coords_filename)
+    coords = np.loadtxt(coords_filename, ndmin=1)
     dim = np.shape(coords)[1]
 
     # Load node types, edges, edge types, and edge contour lengths
-    core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int)
-    conn_edges = np.loadtxt(conn_edges_filename, dtype=int)
-    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int)
-    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename)
+    core_nodes_type = np.loadtxt(core_nodes_type_filename, dtype=int, ndmin=1)
+    conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int, ndmin=1)
+    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename, ndmin=1)
 
     # Save original node coordinates
     np.savetxt(orgnl_coords_filename, coords)
@@ -505,6 +563,7 @@ def aelp_network_hilbert_node_label_assignment(
     coords = coords[hilbert_to_orig_nodes]
     core_nodes_type = core_nodes_type[hilbert_to_orig_nodes]
 
+    if np.ndim(conn_edges) == 1: conn_edges = np.expand_dims(conn_edges, axis=0)
     for edge in range(np.shape(conn_edges)[0]):
         conn_edges[edge, 0] = int(orig_to_hilbert_nodes[conn_edges[edge, 0]])
         conn_edges[edge, 1] = int(orig_to_hilbert_nodes[conn_edges[edge, 1]])
@@ -524,6 +583,123 @@ def aelp_network_hilbert_node_label_assignment(
     np.savetxt(conn_edges_filename, conn_edges, fmt="%d")
     np.savetxt(conn_edges_type_filename, conn_edges_type, fmt="%d")
     np.savetxt(l_cntr_conn_edges_filename, l_cntr_conn_edges)
+
+def aelp_network_multiedge_order_segregation(
+        network: str,
+        date: str,
+        batch: str,
+        sample: int,
+        k: int,
+        config: int) -> None:
+    """Multiedge order segregation procedure for artificial end-linked
+    polymer networks.
+
+    This function segregates edges, edge types, and edge contour lengths
+    into separate arrays based upon the multiedge order of a particular
+    edge. The segregated edges, edge types, and edge contour lengths are
+    then saved.
+
+    Args:
+        network (str): Lower-case acronym indicating the particular type of network that is being represented by the eventual network topology; here, either "auelp", "abelp", or "apelp" are applicable (corresponding to artificial uniform end-linked polymer networks ("auelp"), artificial bimodal end-linked polymer networks ("abelp"), or artificial polydisperse end-linked polymer networks ("apelp")).
+        date (str): "YYYYMMDD" string indicating the date during which the network batch and sample data was generated.
+        batch (str): Single capitalized letter (e.g., A, B, C, ...) indicating the batch label of the network sample data.
+        sample (int): Label of a particular network in the batch.
+        k (int): Maximum cross-linker degree/functionality; either 3, 4, 5, 6, 7, or 8.
+        config (int): Configuration number.
+    
+    """
+    # The artificial end-linked polymer network multiedge order
+    # segregation procedure is only applicable for artificial
+    # end-linked polymer networks. Exit if a different type of network
+    # is passed.
+    if network not in ["auelp", "abelp", "apelp"]:
+        error_str = (
+            "Artificial end-linked polymer network multiedge order "
+            + "segregation procedure is only applicable for artificial "
+            + "end-linked polymer networks. This procedure will only "
+            + "proceed if network = ``auelp'', network = ``abelp'', "
+            + "or network = ``apelp''."
+        )
+        raise ValueError(error_str)
+    
+    # The maximal multiedge order of any edge in the artificial
+    # end-linked polymer network is equal to the maximum cross-linker
+    # degree/functionality less one
+    multiedge_max = aelp_multiedge_max(k)
+    
+    # Generate filenames
+    aelp_filename = aelp_filename_str(network, date, batch, sample, config)
+    conn_edges_filename = aelp_filename + "-conn_edges" + ".dat"
+    conn_edges_type_filename = aelp_filename + "-conn_edges_type" + ".dat"
+    l_cntr_conn_edges_filename = aelp_filename + "-l_cntr_conn_edges" + ".dat"
+
+    # Load edges, edge types, and edge contour lengths
+    conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int, ndmin=1)
+    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename, ndmin=1)
+
+    # Lexicographically sort the edges, edge types, and edge contour
+    # lengths
+    conn_edges, lexsort_indcs = lexsorted_edges(conn_edges, return_indcs=True)
+    conn_edges_type = conn_edges_type[lexsort_indcs]
+    l_cntr_conn_edges = l_cntr_conn_edges[lexsort_indcs]
+
+    # Initialize list of lists for distinct multiedge orders
+    conn_edges_multiedge_order = []
+    conn_edges_type_multiedge_order = []
+    l_cntr_conn_edges_multiedge_order = []
+    for _ in range(multiedge_max):
+        conn_edges_multiedge_order.append([])
+        conn_edges_type_multiedge_order.append([])
+        l_cntr_conn_edges_multiedge_order.append([])
+    
+    # Segregate edges, edge types, and edge contour lengths into
+    # separate lists based upon the multiedge order of a particular edge
+    multiedge = 0
+    m = np.shape(conn_edges)[0]
+    for edge in range(m):
+        conn_edges_multiedge_order[multiedge].append(tuple(conn_edges[edge]))
+        conn_edges_type_multiedge_order[multiedge].append(conn_edges_type[edge])
+        l_cntr_conn_edges_multiedge_order[multiedge].append(
+            l_cntr_conn_edges[edge])
+        if edge < m-1:
+            if np.array_equal(conn_edges[edge], conn_edges[edge+1]):
+                multiedge += 1
+            else: multiedge = 0
+    
+    # Convert multiedge order edges, edge types, and edge contour
+    # lengths lists to np.ndarrays. Store empty np.ndarrays for empty
+    # multiedge orders.
+    for multiedge in range(multiedge_max):
+        conn_edges_multiedge_order[multiedge] = np.asarray(
+            conn_edges_multiedge_order[multiedge], dtype=int)
+        conn_edges_type_multiedge_order[multiedge] = np.asarray(
+            conn_edges_type_multiedge_order[multiedge], dtype=int)
+        l_cntr_conn_edges_multiedge_order[multiedge] = np.asarray(
+            l_cntr_conn_edges_multiedge_order[multiedge])
+    
+    # Save multiedge order edges, edge types, and edge contour lengths
+    for multiedge in range(multiedge_max):
+        # Generate filenames
+        conn_edges_multiedge_order_filename = (
+            aelp_filename + "-conn_edges_" + str(multiedge) + ".dat"
+        )
+        conn_edges_type_multiedge_order_filename = (
+            aelp_filename + "-conn_edges_type_" + str(multiedge) + ".dat"
+        )
+        l_cntr_conn_edges_multiedge_order_filename = (
+            aelp_filename + "-l_cntr_conn_edges_" + str(multiedge) + ".dat"
+        )
+
+        np.savetxt(
+            conn_edges_multiedge_order_filename,
+            conn_edges_multiedge_order[multiedge], fmt="%d")
+        np.savetxt(
+            conn_edges_type_multiedge_order_filename,
+            conn_edges_type_multiedge_order[multiedge], fmt="%d")
+        np.savetxt(
+            l_cntr_conn_edges_multiedge_order_filename,
+            l_cntr_conn_edges_multiedge_order[multiedge])
 
 def aelp_network_local_topological_descriptor(
         network: str,
@@ -595,20 +771,135 @@ def aelp_network_local_topological_descriptor(
         result_filename = aelp_filename + "-lcl-" + tplgcl_dscrptr + ".dat"
 
     # Load simulation box side lengths and node coordinates
-    L = np.loadtxt(L_filename)
-    coords = np.loadtxt(coords_filename)
+    L = np.loadtxt(L_filename, ndmin=1)
+    coords = np.loadtxt(coords_filename, ndmin=1)
 
     # Load fundamental graph constituents
     core_nodes = np.arange(np.shape(coords)[0], dtype=int)
-    conn_edges = np.loadtxt(conn_edges_filename, dtype=int)
-    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int)
-    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename)
+    conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int, ndmin=1)
+    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename, ndmin=1)
 
     # Call the master network_local_topological_descriptor() function
     return network_local_topological_descriptor(
         b, L, coords, core_nodes, conn_edges, conn_edges_type,
         l_cntr_conn_edges, multigraph, result_filename, tplgcl_dscrptr,
         eeel_ntwrk, save_result, return_result)
+
+def aelp_network_local_multiedge_order_topological_descriptor(
+        network: str,
+        date: str,
+        batch: str,
+        sample: int,
+        config: int,
+        b: float,
+        k: int,
+        tplgcl_dscrptr: str,
+        eeel_ntwrk: bool,
+        save_result: bool,
+        return_result: bool) -> list[np.ndarray] | list[float] | list[int] | None:
+    """Artificial end-linked polymer network local multiedge order
+    topological descriptor.
+    
+    This function extracts an artificial end-linked polymer network
+    along with a multiedge order network and sets a variety of input
+    parameters corresponding to a particular local multiedge order
+    topological descriptor of interest. These are then passed to the
+    master network_local_multiedge_order_topological_descriptor()
+    function, which calculates (and, if called for, saves) the result of
+    the local multiedge order topological descriptor for the artificial
+    multiedge order end-linked polymer network.
+
+    Args:
+        network (str): Lower-case acronym indicating the particular type of network that is being represented by the eventual network topology; here, either "auelp", "abelp", or "apelp" are applicable (corresponding to artificial uniform end-linked polymer networks ("auelp"), artificial bimodal end-linked polymer networks ("abelp"), or artificial polydisperse end-linked polymer networks ("apelp")).
+        date (str): "YYYYMMDD" string indicating the date during which the network batch and sample data was generated.
+        batch (str): Single capitalized letter (e.g., A, B, C, ...) indicating the batch label of the network sample data.
+        sample (int): Label of a particular network in the batch.
+        config (int): Configuration number.
+        b (float): Chain segment and/or cross-linker diameter.
+        k (int): Maximum cross-linker degree/functionality; either 3, 4, 5, 6, 7, or 8.
+        tplgcl_dscrptr (str): Topological descriptor name.
+        eeel_ntwrk (bool): Boolean indicating if the elastically-effective end-linked network ought to be supplied for the local topological descriptor calculation. This is ignored.
+        save_result (bool): Boolean indicating if the result ought to be saved.
+        return_result (bool): Boolean indicating if the result ought to be returned.
+    
+    Returns:
+        list[np.ndarray] | list[float] | list[int] | None: Local
+        multiedge order topological descriptor result.
+    
+    """
+    # This local multiedge order topological descriptor calculation is
+    # only applicable for data files associated with artificial
+    # end-linked polymer networks. Exit if a different type of network
+    # is passed.
+    if network not in ["auelp", "abelp", "apelp"]:
+        error_str = (
+            "This local multiedge order topological descriptor "
+            + "calculation is only applicable for artificial "
+            + "end-linked polymer networks. This calculation will only "
+            + "proceed if network = ``auelp'', network = ``abelp'', or "
+            + "network = ``apelp''."
+        )
+        raise ValueError(error_str)
+
+    # The maximal multiedge order of any edge in the artificial
+    # end-linked polymer network is equal to the maximum cross-linker
+    # degree/functionality less one
+    multiedge_max = aelp_multiedge_max(k)
+    
+    # Generate filenames
+    L_filename = L_filename_str(network, date, batch, sample)
+    aelp_filename = aelp_filename_str(network, date, batch, sample, config)
+    coords_filename = aelp_filename + ".coords"
+
+    # Load simulation box side lengths, node coordinates, and core node
+    # numbers
+    L = np.loadtxt(L_filename, ndmin=1)
+    coords = np.loadtxt(coords_filename, ndmin=1)
+    core_nodes = np.arange(np.shape(coords)[0], dtype=int)
+
+    # Initialize lists for distinct multiedge orders for edges, edge
+    # types, and edge contour lengths. Also initialize a list for the
+    # result filename for distinct multiedge orders.
+    conn_edges_multiedge_order = []
+    conn_edges_type_multiedge_order = []
+    l_cntr_conn_edges_multiedge_order = []
+    result_filename_multiedge_order = []
+
+    # Load multiedge order edges, edge types, and edge contour lengths
+    # and populate the result filename dictionary
+    for multiedge in range(multiedge_max):
+        # Generate filenames
+        conn_edges_multiedge_order_filename = (
+            aelp_filename + "-conn_edges_" + str(multiedge) + ".dat"
+        )
+        conn_edges_type_multiedge_order_filename = (
+            aelp_filename + "-conn_edges_type_" + str(multiedge) + ".dat"
+        )
+        l_cntr_conn_edges_multiedge_order_filename = (
+            aelp_filename + "-l_cntr_conn_edges_" + str(multiedge) + ".dat"
+        )
+        result_multiedge_order_filename = (
+            aelp_filename + "-lcl-" + tplgcl_dscrptr + "_" + str(multiedge)
+            + ".dat"
+        )
+
+        conn_edges_multiedge_order.append(
+            np.loadtxt(conn_edges_multiedge_order_filename, dtype=int, ndmin=1))
+        conn_edges_type_multiedge_order.append(
+            np.loadtxt(
+                conn_edges_type_multiedge_order_filename, dtype=int, ndmin=1))
+        l_cntr_conn_edges_multiedge_order.append(
+            np.loadtxt(l_cntr_conn_edges_multiedge_order_filename, ndmin=1))
+        result_filename_multiedge_order.append(result_multiedge_order_filename)
+
+    # Call the master
+    # network_local_multiedge_order_topological_descriptor() function
+    return network_local_multiedge_order_topological_descriptor(
+        b, multiedge_max, L, coords, core_nodes, conn_edges_multiedge_order,
+        conn_edges_type_multiedge_order, l_cntr_conn_edges_multiedge_order,
+        result_filename_multiedge_order, tplgcl_dscrptr, save_result,
+        return_result)
 
 def aelp_network_global_topological_descriptor(
         network: str,
@@ -698,14 +989,14 @@ def aelp_network_global_topological_descriptor(
             )
 
     # Load simulation box side lengths and node coordinates
-    L = np.loadtxt(L_filename)
-    coords = np.loadtxt(coords_filename)
+    L = np.loadtxt(L_filename, ndmin=1)
+    coords = np.loadtxt(coords_filename, ndmin=1)
 
     # Load fundamental graph constituents
     core_nodes = np.arange(np.shape(coords)[0], dtype=int)
-    conn_edges = np.loadtxt(conn_edges_filename, dtype=int)
-    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int)
-    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename)
+    conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int, ndmin=1)
+    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename, ndmin=1)
 
     # Call the master network_global_topological_descriptor() function
     return network_global_topological_descriptor(
@@ -722,7 +1013,7 @@ def aelp_network_global_morphological_descriptor(
         b: float,
         mrphlgcl_dscrptr: str,
         save_result: bool,
-        return_result: bool) -> np.ndarray | float | int | None:
+        return_result: bool) -> float:
     """Artificial end-linked polymer network global morphological
     descriptor.
     
@@ -746,8 +1037,7 @@ def aelp_network_global_morphological_descriptor(
         return_result (bool): Boolean indicating if the result ought to be returned.
     
     Returns:
-        np.ndarray | float | int | None: Global morphological descriptor
-        result.
+        float | None: Global morphological descriptor result.
     
     """
     # This global morphological descriptor calculation is only
@@ -773,17 +1063,93 @@ def aelp_network_global_morphological_descriptor(
     result_filename = aelp_filename + "-glbl-" + mrphlgcl_dscrptr + ".dat"
 
     # Load simulation box side lengths and node coordinates
-    L = np.loadtxt(L_filename)
-    coords = np.loadtxt(coords_filename)
+    L = np.loadtxt(L_filename, ndmin=1)
+    coords = np.loadtxt(coords_filename, ndmin=1)
 
     # Load fundamental graph constituents
     core_nodes = np.arange(np.shape(coords)[0], dtype=int)
-    conn_edges = np.loadtxt(conn_edges_filename, dtype=int)
-    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int)
-    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename)
+    conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int, ndmin=1)
+    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename, ndmin=1)
 
     # Call the master network_global_morphological_descriptor() function
     return network_global_morphological_descriptor(
         b, L, coords, core_nodes, conn_edges, conn_edges_type,
         l_cntr_conn_edges, result_filename, mrphlgcl_dscrptr, save_result,
         return_result)
+
+def aelp_network_global_property_descriptor(
+        network: str,
+        date: str,
+        batch: str,
+        sample: int,
+        config: int,
+        b: float,
+        prprty_dscrptr: str,
+        save_result: bool,
+        return_result: bool) -> float:
+    """Artificial end-linked polymer network global property descriptor.
+    
+    This function extracts an artificial end-linked polymer network and
+    sets a variety of input parameters corresponding to a particular
+    global property descriptor of interest. These are then passed to the
+    master network_global_property_descriptor() function, which
+    calculates (and, if called for, saves) the result of the global
+    property descriptor for the artificial end-linked polymer network.
+
+    Args:
+        network (str): Lower-case acronym indicating the particular type of network that is being represented by the eventual network topology; here, either "auelp", "abelp", or "apelp" are applicable (corresponding to artificial uniform end-linked polymer networks ("auelp"), artificial bimodal end-linked polymer networks ("abelp"), or artificial polydisperse end-linked polymer networks ("apelp")).
+        date (str): "YYYYMMDD" string indicating the date during which the network batch and sample data was generated.
+        batch (str): Single capitalized letter (e.g., A, B, C, ...) indicating the batch label of the network sample data.
+        sample (int): Label of a particular network in the batch.
+        config (int): Configuration number.
+        b (float): Chain segment and/or cross-linker diameter.
+        prprty_dscrptr (str): Property descriptor name.
+        save_result (bool): Boolean indicating if the result ought to be saved.
+        return_result (bool): Boolean indicating if the result ought to be returned.
+    
+    Returns:
+        float | None: Global property descriptor result.
+    
+    """
+    # This global property descriptor calculation is only applicable for
+    # data files associated with artificial end-linked polymer networks.
+    # Exit if a different type of network is passed.
+    if network not in ["auelp", "abelp", "apelp"]:
+        error_str = (
+            "This global property descriptor calculation is only "
+            + "applicable for artificial end-linked polymer networks. "
+            + "This calculation will only proceed if "
+            + "network = ``auelp'', network = ``abelp'', or "
+            + "network = ``apelp''."
+        )
+        raise ValueError(error_str)
+    
+    # An artificial end-linked polymer network is represented via an
+    # nx.MultiGraph object
+    multigraph = True
+    
+    # Generate filenames
+    L_filename = L_filename_str(network, date, batch, sample)
+    aelp_filename = aelp_filename_str(network, date, batch, sample, config)
+    coords_filename = aelp_filename + ".coords"
+    conn_edges_filename = aelp_filename + "-conn_edges" + ".dat"
+    conn_edges_type_filename = aelp_filename + "-conn_edges_type" + ".dat"
+    l_cntr_conn_edges_filename = aelp_filename + "-l_cntr_conn_edges" + ".dat"
+    result_filename = aelp_filename + "-" + prprty_dscrptr + ".dat"
+
+    # Load simulation box side lengths and node coordinates
+    L = np.loadtxt(L_filename, ndmin=1)
+    coords = np.loadtxt(coords_filename, ndmin=1)
+
+    # Load fundamental graph constituents
+    core_nodes = np.arange(np.shape(coords)[0], dtype=int)
+    conn_edges = np.loadtxt(conn_edges_filename, dtype=int, ndmin=1)
+    conn_edges_type = np.loadtxt(conn_edges_type_filename, dtype=int, ndmin=1)
+    l_cntr_conn_edges = np.loadtxt(l_cntr_conn_edges_filename, ndmin=1)
+
+    # Call the master network_global_property_descriptor() function
+    return network_global_property_descriptor(
+        b, L, coords, core_nodes, conn_edges, conn_edges_type,
+        l_cntr_conn_edges, multigraph, result_filename, prprty_dscrptr,
+        save_result, return_result)

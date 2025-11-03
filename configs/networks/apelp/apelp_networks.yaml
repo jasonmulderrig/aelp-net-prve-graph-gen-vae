@@ -1,10 +1,10 @@
 defaults:
-  - topology: 20250102A
-  - descriptors: 20250102A
+  - topology: 20250822A
+  - descriptors: 20250822A
   - _self_
 label:
   network: apelp
-  date: !!str 20250102
+  date: !!str 20250822
   batch: A
   scheme: prhd
 synthesis:

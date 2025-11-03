@@ -20,29 +20,11 @@ def lexsorted_edges(
         indices of the lexicographic edge sort.
     
     """
-    edges = np.sort(np.asarray(edges, dtype=int), axis=1)
+    if np.ndim(edges) == 1: edges = np.expand_dims(edges, axis=0)
+    edges = np.sort(edges, axis=1)
     lexsort_indcs = np.lexsort((edges[:, 1], edges[:, 0]))
     if return_indcs: return edges[lexsort_indcs], lexsort_indcs
     else: return edges[lexsort_indcs]
-
-# change this to provide back counts of unique lexsorted edges, if
-# requested? back impose this to rest of code, and do this for
-# irreg_net_prve repo as well.
-def unique_lexsorted_edges(edges: list[tuple[int, int]]) -> np.ndarray:
-    """Unique lexicographically sorted edges.
-
-    This function takes a list (or an np.ndarray) of (A, B) nodes
-    specifying edges, converts this to an np.ndarray, lexicographically
-    sorts the edge entries, and extracts the resulting unique edges.
-
-    Args:
-        edges (list[tuple[int, int]] | np.ndarray): Edges.
-    
-    Returns:
-        np.ndarray: Unique lexicographically sorted edges.
-    
-    """
-    return np.unique(lexsorted_edges(edges), axis=0)
 
 def add_nodes_from_numpy_array(
         graph: nx.Graph | nx.MultiGraph,
@@ -81,6 +63,7 @@ def add_edges_from_numpy_array(
         nx.Graph | nx.MultiGraph: (Undirected) NetworkX graph.
     
     """
+    if np.ndim(edges) == 1: edges = np.expand_dims(edges, axis=0)
     graph.add_edges_from(list(tuple(edge) for edge in edges.tolist()))
     return graph
 
@@ -172,6 +155,7 @@ def add_edges_and_edge_attributes_from_numpy_arrays(
         raise ValueError(error_str)
     
     # Convert np.ndarrays to lists
+    if np.ndim(edges) == 1: edges = np.expand_dims(edges, axis=0)
     edges = list(tuple(edge) for edge in edges.tolist())
     attr_vals = tuple(attr.tolist() for attr in attr_vals)
 
@@ -212,7 +196,9 @@ def extract_edges_to_numpy_array(graph: nx.Graph | nx.MultiGraph) -> np.ndarray:
         np.ndarray: Edges.
     
     """
-    return np.asarray(list(graph.edges()), dtype=int)
+    edges = np.asarray(list(graph.edges()), dtype=int)
+    if np.ndim(edges) == 1: edges = np.expand_dims(edges, axis=0)
+    return edges
 
 def extract_node_attribute_to_numpy_array(
         graph: nx.Graph | nx.MultiGraph,
@@ -295,9 +281,11 @@ def edge_id(graph: nx.Graph | nx.MultiGraph) -> tuple[np.ndarray, np.ndarray]:
     """
     # Gather edges and edges counts
     graph_edges = np.asarray(list(graph.edges()), dtype=int)
+    if np.ndim(graph_edges) == 1:
+        graph_edges = np.expand_dims(graph_edges, axis=0)
     if graph.is_multigraph():
         graph_edges, graph_edges_counts = np.unique(
-            np.sort(graph_edges, axis=1), return_counts=True, axis=0)
+            lexsorted_edges(graph_edges), return_counts=True, axis=0)
     else:
         graph_edges_counts = np.ones(np.shape(graph_edges)[0], dtype=int)
     
@@ -470,8 +458,8 @@ def multiedge_restoration(
 
     Args:
         graph (nx.Graph | nx.MultiGraph): (Undirected) NetworkX graph.
-        np.ndarray: Edges.
-        np.ndarray: Number of (multi)edges involved for each edge.
+        graph_edges (np.ndarray): Edges.
+        graph_edges_counts (np.ndarray): Number of (multi)edges involved for each edge.
     
     Returns:
         nx.Graph | nx.MultiGraph: (Undirected) NetworkX graph.
@@ -588,7 +576,7 @@ def elastically_effective_end_linked_graph(
     # connected component
     return largest_connected_component(graph)
 
-def conn_edges_attr_to_edge_index_attr_arr(
+def conn_edges_attr_to_edge_attr_arr(
         conn_edges_attr: np.ndarray) -> np.ndarray:
     """Edge index attributes array converted from an edge attributes
     array.
@@ -606,14 +594,11 @@ def conn_edges_attr_to_edge_index_attr_arr(
         np.ndarray: Corresponding edge index attributes array.
     
     """
-    m = np.shape(conn_edges_attr)[0]
-    return (
-        np.concatenate(
-            (conn_edges_attr, conn_edges_attr))[np.arange(2*m).reshape(2, m).T.flatten()]
-    )
+    if np.array_equal(conn_edges_attr, np.asarray([])): return conn_edges_attr
+    else: return np.repeat(conn_edges_attr, 2)
 
-def edge_index_attr_arr_to_conn_edges_attr(
-        edge_index_attr_arr: np.ndarray) -> np.ndarray:
+def edge_attr_arr_to_conn_edges_attr(
+        edge_attr_arr: np.ndarray) -> np.ndarray:
     """Edge attributes array converted from an edge index attributes
     array.
 
@@ -624,13 +609,14 @@ def edge_index_attr_arr_to_conn_edges_attr(
     (torch_geometric.data.edge_index).
 
     Args:
-        edge_index_attr_arr (np.ndarray): Edge index attributes array from the graph capturing the periodic connections between the core nodes.
+        edge_attr_arr (np.ndarray): Edge index attributes array from the graph capturing the periodic connections between the core nodes.
     
     Returns:
         np.ndarray: Corresponding edge attributes array.
     
     """
-    return edge_index_attr_arr[::2]
+    if np.array_equal(edge_attr_arr, np.asarray([])): return edge_attr_arr
+    else: return edge_attr_arr[::2]
 
 def conn_edges_to_edge_index_arr(conn_edges: np.ndarray) -> np.ndarray:
     """Edge index array converted from an edges array.
@@ -647,12 +633,14 @@ def conn_edges_to_edge_index_arr(conn_edges: np.ndarray) -> np.ndarray:
         np.ndarray: Corresponding edge index array.
     
     """
-    m = np.shape(conn_edges)[0]
-    return (
-        np.transpose(
-            np.vstack(
-                (conn_edges, conn_edges[:, ::-1]))[np.arange(2*m).reshape(2, m).T.flatten()])
-    )
+    if np.array_equal(conn_edges, np.asarray([])):
+        return np.asarray([[], []], dtype=int)
+    else:
+        if np.ndim(conn_edges) == 1: conn_edges = np.expand_dims(
+            conn_edges, axis=0)
+        edge_index_arr = np.repeat(np.transpose(conn_edges), 2, dim=1)
+        edge_index_arr[:, 1::2] = np.flipud(edge_index_arr[:, 1::2])
+        return edge_index_arr
 
 def edge_index_arr_to_conn_edges(edge_index_arr: np.ndarray) -> np.ndarray:
     """Edges array converted from an edge index array.
@@ -669,7 +657,9 @@ def edge_index_arr_to_conn_edges(edge_index_arr: np.ndarray) -> np.ndarray:
         np.ndarray: Corresponding edges array.
     
     """
-    return np.transpose(edge_index_arr)[::2]
+    if np.array_equal(edge_index_arr, np.asarray([[], []])):
+        return np.asarray([], dtype=int)
+    else: return np.transpose(edge_index_arr)[::2]
 
 def conn_edges_to_conn_sparse_A_arr(
         conn_edges: np.ndarray,
@@ -721,6 +711,7 @@ def conn_edges_to_conn_sparse_A_arr(
     
     # Confirm that the provided network does not violate the maximal
     # node degree
+    if np.ndim(conn_edges) == 1: conn_edges = np.expand_dims(conn_edges, axis=0)
     m = np.shape(conn_edges)[0]
     k = np.zeros(n, dtype=int)
     for edge in range(m):

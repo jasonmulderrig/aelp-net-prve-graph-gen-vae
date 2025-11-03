@@ -1,0 +1,13 @@
+batch_size: 16
+n_epochs: 1000
+n_epochs_per_anneal_cycle: 30
+rampup_anneal_cycle_ratio: 0.5
+max_beta: 0.01 # try {0.005, 0.001}
+lr: 5e-3
+weight_decay: 1e-5
+lr_scheduler_mode: min
+lr_scheduler_factor: 0.5
+lr_scheduler_patience: 30 # 30 for initial hyperparameter tuning, 60 for refined hyperparameter tuning
+loss_log_indx: 5
+clip_norm_max: 20.0
+patience: 60 # 60 for initial hyperparameter tuning, 120 for refined hyperparameter tuning

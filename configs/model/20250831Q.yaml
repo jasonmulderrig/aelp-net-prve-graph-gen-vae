@@ -1,0 +1,43 @@
+synthesis_protocol_params: True
+property_descriptors: True
+d_adj: 5
+d_coords: 1
+d_adj_coords: 1
+node_dim: 5
+edge_dim: 5
+adj_hidden_dim: 32
+edge_attr_hidden_dim: 32
+p_dropout: 0.05
+supply_edge_dim: True
+train_eps: True
+inplace: False
+coords_hidden_dims:
+  - 512
+  - 768
+  - 512
+L_hidden_dims:
+  - 32
+  - 64
+  - 128
+  - 64
+  - 32
+  - 16
+synthesis_protocol_params_hidden_dims:
+  - 32
+  - 64
+  - 128
+  - 64
+  - 32
+  - 16
+property_descriptors_hidden_dims:
+  - 32
+  - 64
+  - 128
+  - 64
+  - 32
+  - 16
+regress_loss_func: mse
+edges_eval_func: log_loss
+edge_type_eval_func: log_loss
+descriptor_regress_eval_func: mse
+ntwrk_compnts_regress_eval_func: mse

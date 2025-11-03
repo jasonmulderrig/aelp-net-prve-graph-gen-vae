@@ -1,0 +1,53 @@
+synthesis_protocol_params: True
+property_descriptors: True
+# need to figure out sensible d_adj, d_coords, and d_adj_coords training set
+# hold d constant {4, 6, 8}, and permute {d_adj, d_coords, d_adj_coords} as necessary
+# for d = 4: {1, 1, 2}
+# for d = 6: {1, 1, 4}, {2, 2, 2}
+# for d = 8: {1, 1, 6}, {2, 2, 4}, {3, 3, 2}
+d_adj: 1 # check with the original attributed network embedding method paper
+d_coords: 1 # check with the original attributed network embedding method paper
+d_adj_coords: 2 # check with the original attributed network embedding method paper
+node_dim: 5
+edge_dim: 5
+adj_hidden_dim: 16 # also try 32?
+edge_attr_hidden_dim: 16 # also try 32?
+p_dropout: 0.0 # also try 0.025 and 0.05?
+supply_edge_dim: False
+train_eps: True
+inplace: False # Switch to True after demo code runs complete successfully -- this will make runtime go faster
+coords_hidden_dims:
+  - 64
+  - 128
+  - 256
+  - 128
+  - 64
+# also try [128, 256, 512, 256, 128]?
+L_hidden_dims:
+  - 16
+  - 32
+  - 64
+  - 32
+  - 16
+  - 8
+# also try [32, 64, 128, 64, 32, 16]?
+synthesis_protocol_params_hidden_dims:
+  - 16
+  - 32
+  - 64
+  - 32
+  - 16
+  - 8
+# also try [32, 64, 128, 64, 32, 16]?
+property_descriptors_hidden_dims:
+  - 16
+  - 32
+  - 64
+  - 32
+  - 16
+  - 8
+# also try [32, 64, 128, 64, 32, 16]?
+neg_edge_graph_adj_rho: 1.0
+regress_loss_func: mse # mse or l1
+descriptor_regress_eval_func: mae # mse or mae
+ntwrk_compnts_regress_eval_func: r2 # r2 or mse or mae

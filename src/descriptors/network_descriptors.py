@@ -20,6 +20,7 @@ import src.descriptors.nodal_degree_topological_descriptors
 import src.descriptors.shortest_path_topological_descriptors
 import src.descriptors.general_topological_descriptors
 import src.descriptors.morphological_descriptors
+import src.descriptors.property_descriptors
 
 def network_local_topological_descriptor(
         b: float,
@@ -320,6 +321,296 @@ def network_local_topological_descriptor(
     if return_result: return tplgcl_dscrptr_result
     else: return None
 
+def network_local_multiedge_order_topological_descriptor(
+        b: float,
+        multiedge_max: int,
+        L: np.ndarray,
+        coords: np.ndarray,
+        core_nodes: np.ndarray,
+        conn_edges_multiedge_order: list[np.ndarray],
+        conn_edges_type_multiedge_order: list[np.ndarray],
+        l_cntr_conn_edges_multiedge_order: list[np.ndarray],
+        result_filename_multiedge_order: list[str],
+        tplgcl_dscrptr: str,
+        save_result: bool,
+        return_result: bool) -> list[np.ndarray] | list[float] | list[int] | None:
+    """Local multiedge order network topological descriptor.
+    
+    This function calculates the result of a local topological
+    descriptor for a supplied multiedge order network. The resulting
+    local multiedge order topological descriptor can be saved and
+    returned.
+
+    Args:
+        b (float): Chain segment and/or cross-linker diameter.
+        multiedge_max (int): Maximal multiedge order of any edge in the network.
+        L (np.ndarray): Simulation box side lengths.
+        coords (np.ndarray): Coordinates of the core nodes.
+        core_nodes (np.ndarray): Core nodes.
+        conn_edges_multiedge_order (list[np.ndarray]): List of multiedge order edges from the graph capturing the periodic connections between the core nodes.
+        conn_edges_type_multiedge_order (list[np.ndarray]): List of multiedge order type label for the edges from the graph capturing the periodic connections between the core nodes. Core edges are of type 1, and periodic boundary edges are of type 2.
+        l_cntr_conn_edges_multiedge_order (list[np.ndarray]): List of multiedge order contour length of the edges from the graph capturing the periodic connections between the core nodes.
+        result_filename_multiedge_order (list[str]): List of multiedge order filenames for the local multiedge order topological descriptor result.
+        tplgcl_dscrptr (str): Topological descriptor name.
+        save_result (bool): Boolean indicating if the result ought to be saved.
+        return_result (bool): Boolean indicating if the result ought to be returned.
+    
+    Returns:
+        list[np.ndarray] | list[float] | list[int] | None: Local
+        multiedge order topological descriptor result.
+    
+    """
+    # Nodewise topological descriptors
+    node_tplgcl_dscrptr_list = [
+        "k", "avrg_nn_k", "avrg_k_diff", "c", "lcl_avrg_kappa", "epsilon",
+        "l_attr_epsilon", "l_inv_attr_epsilon", "gamma_attr_epsilon",
+        "gamma_inv_attr_epsilon", "avrg_d", "avrg_l_attr_d",
+        "avrg_l_inv_attr_d", "avrg_gamma_attr_d", "avrg_gamma_inv_attr_d",
+        "avrg_e", "avrg_l_attr_e", "avrg_l_inv_attr_e", "avrg_gamma_attr_e",
+        "avrg_gamma_inv_attr_e", "bc", "l_attr_bc", "l_inv_attr_bc",
+        "gamma_attr_bc", "gamma_inv_attr_bc", "cc", "l_attr_cc",
+        "l_inv_attr_cc", "gamma_attr_cc", "gamma_inv_attr_cc"
+    ]
+    # Edgewise topological descriptors
+    edge_tplgcl_dscrptr_list = [
+        "l", "l_inv", "l_cmpnts", "l_naive", "l_cntr", "gamma", "gamma_inv",
+        "k_diff", "ebc", "l_attr_ebc", "l_inv_attr_ebc", "gamma_attr_ebc",
+        "gamma_inv_attr_ebc"
+    ]
+    # Edge length topological descriptors
+    l_tplgcl_dscrptr_list = ["l", "l_inv", "l_cmpnts"]
+    # Chain/edge stretch topological descriptors
+    gamma_tplgcl_dscrptr_list = ["gamma", "gamma_inv"]
+    # Edge length attributed topological descriptors
+    l_attr_tplgcl_dscrptr_list = [
+        "l_attr_epsilon", "avrg_l_attr_d", "avrg_l_attr_e", "l_attr_bc",
+        "l_attr_ebc", "l_attr_cc"
+    ]
+    # Inverse edge length attributed topological descriptors
+    l_inv_attr_tplgcl_dscrptr_list = [
+        "l_inv_attr_epsilon", "avrg_l_inv_attr_d", "avrg_l_inv_attr_e",
+        "l_inv_attr_bc", "l_inv_attr_ebc", "l_inv_attr_cc"
+    ]
+    # Edge stretch attributed topological descriptors
+    gamma_attr_tplgcl_dscrptr_list = [
+        "gamma_attr_epsilon", "avrg_gamma_attr_d", "avrg_gamma_attr_e",
+        "gamma_attr_bc", "gamma_attr_ebc", "gamma_attr_cc"
+    ]
+    # Inverse edge stretch attributed topological descriptors
+    gamma_inv_attr_tplgcl_dscrptr_list = [
+        "gamma_inv_attr_epsilon", "avrg_gamma_inv_attr_d",
+        "avrg_gamma_inv_attr_e", "gamma_inv_attr_bc", "gamma_inv_attr_ebc",
+        "gamma_inv_attr_cc"
+    ]
+    # Integer-based topological descriptors
+    dtype_int_tplgcl_dscrptr_list = ["k", "k_diff", "epsilon"]
+
+    # Exit if the topological descriptor is incompatible with the
+    # possible nodewise and edgewise topological descriptors
+    if (tplgcl_dscrptr not in node_tplgcl_dscrptr_list) \
+        and (tplgcl_dscrptr not in edge_tplgcl_dscrptr_list):
+            error_str = (
+                "The topological descriptor is incompatible with the "
+                + "possible nodewise and edgewise topological "
+                + "descriptors. Please modify the requested "
+                + "topological descriptor accordingly."
+            )
+            raise ValueError(error_str)
+    
+    # Modify topological descriptor string to match function name
+    # convention
+    tplgcl_dscrptr_func_str = tplgcl_dscrptr + "_func"
+
+    # Probe each topological descriptors module to identify the
+    # topological descriptor calculation function
+    if hasattr(src.descriptors.nodal_degree_topological_descriptors, tplgcl_dscrptr_func_str):
+        tplgcl_dscrptr_func = getattr(
+            src.descriptors.nodal_degree_topological_descriptors, tplgcl_dscrptr_func_str)
+    elif hasattr(src.descriptors.shortest_path_topological_descriptors, tplgcl_dscrptr_func_str):
+        tplgcl_dscrptr_func = getattr(
+            src.descriptors.shortest_path_topological_descriptors, tplgcl_dscrptr_func_str)
+    elif hasattr(src.descriptors.general_topological_descriptors, tplgcl_dscrptr_func_str):
+        tplgcl_dscrptr_func = getattr(
+            src.descriptors.general_topological_descriptors, tplgcl_dscrptr_func_str)
+    else:
+        error_str = (
+            "The topological descriptor ``" + tplgcl_dscrptr + "'' is "
+            + "not implemented!"
+        )
+        raise AttributeError(error_str)
+    
+    # Determine if the topological descriptor is a nodewise topological
+    # descriptor or an edgewise topological descriptor
+    if tplgcl_dscrptr in node_tplgcl_dscrptr_list:
+        tplgcl_dscrptr_type = "nodewise"
+    elif tplgcl_dscrptr in edge_tplgcl_dscrptr_list:
+        tplgcl_dscrptr_type = "edgewise"
+
+    # Determine if the topological descriptor is integer-based or not
+    if tplgcl_dscrptr in dtype_int_tplgcl_dscrptr_list: dtype_int = True
+    else: dtype_int = False
+
+    # For the as-provided network, sort the node numbers in ascending
+    # order, and correspondingly sort both the core nodes type and the
+    # coordinates
+    argsort_indcs = np.argsort(core_nodes)
+    core_nodes = core_nodes[argsort_indcs]
+    coords = coords[argsort_indcs]
+
+    # Extract number of nodes and dimensionality of the as-provided
+    # network
+    n = np.shape(core_nodes)[0]
+    dim = np.shape(L)[0]
+
+    # Initialize list for topological descriptor for distinct multiedge
+    # order networks
+    tplgcl_dscrptr_result_multiedge_order = []
+    
+    # Assess the topological descriptor for each multiedge order network
+    for multiedge in range(multiedge_max):
+        conn_edges = conn_edges_multiedge_order[multiedge]
+        conn_edges_type = conn_edges_type_multiedge_order[multiedge]
+        l_cntr_conn_edges = l_cntr_conn_edges_multiedge_order[multiedge]
+
+        if np.array_equal(conn_edges, np.asarray([])):
+            # Address empty multiedge order networks
+            if tplgcl_dscrptr_type == "nodewise":
+                if dtype_int: tplgcl_dscrptr_result = np.zeros(n, dtype=int)
+                else: tplgcl_dscrptr_result = np.zeros(n)
+            elif tplgcl_dscrptr_type == "edgewise":
+                if dtype_int: tplgcl_dscrptr_result = np.asarray([], dtype=int)
+                else: tplgcl_dscrptr_result = np.asarray([])
+        else:
+            # For the multiedge order network, lexicographically sort
+            # the edges, edges type, and edges contour length, and
+            # extract the number of edges
+            conn_edges, lexsort_indcs = lexsorted_edges(
+                conn_edges, return_indcs=True)
+            conn_edges_type = conn_edges_type[lexsort_indcs]
+            l_cntr_conn_edges = l_cntr_conn_edges[lexsort_indcs]
+            m = np.shape(conn_edges)[0]
+
+            # Create an array to store the eventual topological
+            # descriptor result
+            if tplgcl_dscrptr_type == "nodewise":
+                if dtype_int: tplgcl_dscrptr_result = np.zeros(n, dtype=int)
+                else: tplgcl_dscrptr_result = np.zeros(n)
+            elif tplgcl_dscrptr_type == "edgewise":
+                if tplgcl_dscrptr == "l_cmpnts":
+                    tplgcl_dscrptr_result = np.zeros((m, dim))
+                elif dtype_int: tplgcl_dscrptr_result = np.zeros(m, dtype=int)
+                else: tplgcl_dscrptr_result = np.zeros(m)
+            
+            # Create nx.Graph by adding nodes before edges for the
+            # multiedge order network
+            conn_graph = nx.Graph()
+            conn_graph = add_nodes_from_numpy_array(conn_graph, core_nodes)
+            
+            # Calculate the topological descriptor for the multiedge
+            # order network
+            if tplgcl_dscrptr in l_tplgcl_dscrptr_list:
+                tplgcl_dscrptr_result = tplgcl_dscrptr_func(
+                    conn_edges, conn_edges_type, coords, L)
+            elif tplgcl_dscrptr == "l_naive":
+                tplgcl_dscrptr_result = tplgcl_dscrptr_func(conn_edges, coords)
+            elif tplgcl_dscrptr == "l_cntr":
+                tplgcl_dscrptr_result = l_cntr_conn_edges
+            elif tplgcl_dscrptr in gamma_tplgcl_dscrptr_list:
+                tplgcl_dscrptr_result = tplgcl_dscrptr_func(
+                    conn_edges, conn_edges_type, l_cntr_conn_edges, coords, L)
+            else:
+                # If called for, add edges and edge attributes for the
+                # multiedge order network
+                if tplgcl_dscrptr in l_attr_tplgcl_dscrptr_list:
+                    conn_graph = add_edges_and_edge_attributes_from_numpy_arrays(
+                        conn_graph, conn_edges, ["l"],
+                        l_func(conn_edges, conn_edges_type, coords, L))
+                elif tplgcl_dscrptr in l_inv_attr_tplgcl_dscrptr_list:
+                    conn_graph = add_edges_and_edge_attributes_from_numpy_arrays(
+                        conn_graph, conn_edges, ["l_inv"],
+                        l_inv_func(conn_edges, conn_edges_type, coords, L))
+                elif tplgcl_dscrptr in gamma_attr_tplgcl_dscrptr_list:
+                    conn_graph = add_edges_and_edge_attributes_from_numpy_arrays(
+                        conn_graph, conn_edges, ["gamma"],
+                        gamma_func(conn_edges, conn_edges_type, l_cntr_conn_edges, coords, L))
+                elif tplgcl_dscrptr in gamma_inv_attr_tplgcl_dscrptr_list:
+                    conn_graph = add_edges_and_edge_attributes_from_numpy_arrays(
+                        conn_graph, conn_edges, ["gamma_inv"],
+                        gamma_inv_func(conn_edges, conn_edges_type, l_cntr_conn_edges, coords, L))
+                # Otherwise, add edges for the multiedge order network
+                else:
+                    conn_graph = add_edges_from_numpy_array(
+                        conn_graph, conn_edges)
+                
+                # Remove isolate nodes
+                conn_graph.remove_nodes_from(list(nx.isolates(conn_graph)))
+                
+                # Calculate graph-based topological descriptor
+                altrd_tplgcl_dscrptr_result = tplgcl_dscrptr_func(conn_graph)
+                
+                # Extract nodes or edges from the multiedge order
+                # network less isolate nodes, and properly format and
+                # transfer the topological descriptor result with
+                # respect to the multiedge order network
+                if tplgcl_dscrptr_type == "nodewise":
+                    altrd_core_nodes = extract_nodes_to_numpy_array(conn_graph)
+                    # Sort the node numbers in ascending order, and
+                    # correspondingly sort the topological descriptor
+                    argsort_indcs = np.argsort(altrd_core_nodes)
+                    altrd_core_nodes = altrd_core_nodes[argsort_indcs]
+                    altrd_tplgcl_dscrptr_result = (
+                        altrd_tplgcl_dscrptr_result[argsort_indcs]
+                    )
+                    altrd_n = np.shape(altrd_core_nodes)[0]
+                    altrd_node = 0
+                    node = 0
+                    while altrd_node < altrd_n:
+                        if altrd_core_nodes[altrd_node] == core_nodes[node]:
+                            tplgcl_dscrptr_result[node] = (
+                                altrd_tplgcl_dscrptr_result[altrd_node]
+                            )
+                            altrd_node += 1
+                        node += 1
+                elif tplgcl_dscrptr_type == "edgewise":
+                    altrd_conn_edges = extract_edges_to_numpy_array(conn_graph)
+                    # Lexicographically sort the edges and the
+                    # topological descriptor for the altered multiedge
+                    # order network
+                    altrd_conn_edges, lexsort_indcs = lexsorted_edges(
+                        altrd_conn_edges, return_indcs=True)
+                    altrd_tplgcl_dscrptr_result = (
+                        altrd_tplgcl_dscrptr_result[lexsort_indcs]
+                    )
+                    altrd_m = np.shape(altrd_conn_edges)[0]
+                    altrd_edge = 0
+                    edge = 0
+                    while altrd_edge < altrd_m:
+                        if np.array_equal(altrd_conn_edges[altrd_edge], conn_edges[edge]):
+                            tplgcl_dscrptr_result[edge] = (
+                                altrd_tplgcl_dscrptr_result[altrd_edge]
+                            )
+                            altrd_edge += 1
+                        edge += 1
+        
+        # Store the topological descriptor for each multiedge order
+        # network
+        tplgcl_dscrptr_result_multiedge_order.append(tplgcl_dscrptr_result)
+    
+    # Save topological descriptor result for each multiedge order
+    # network (if called for)
+    for multiedge in range(multiedge_max):
+        tplgcl_dscrptr_result = tplgcl_dscrptr_result_multiedge_order[multiedge]
+        result_filename = result_filename_multiedge_order[multiedge]
+        if save_result:
+            if dtype_int:
+                np.savetxt(result_filename, tplgcl_dscrptr_result, fmt="%d")
+            else: np.savetxt(result_filename, tplgcl_dscrptr_result)
+
+    # Return topological descriptor result for distinct multiedge order
+    # networks (if called for)
+    if return_result: return tplgcl_dscrptr_result_multiedge_order
+    else: return None
+
 def network_global_topological_descriptor(
         b: float,
         L: np.ndarray,
@@ -593,7 +884,7 @@ def network_global_morphological_descriptor(
         result_filename: str,
         mrphlgcl_dscrptr: str,
         save_result: bool,
-        return_result: bool) -> np.ndarray | float | int | None:
+        return_result: bool) -> float:
     """Global network morphological descriptor.
     
     This function calculates the result of a global morphological
@@ -614,8 +905,7 @@ def network_global_morphological_descriptor(
         return_result (bool): Boolean indicating if the result ought to be returned.
     
     Returns:
-        np.ndarray | float | int | None: Global morphological descriptor
-        result.
+        float: Global morphological descriptor result.
     
     """
     # Morphological descriptors
@@ -686,6 +976,146 @@ def network_global_morphological_descriptor(
     if save_result:
         np.savetxt(result_filename, np.asarray([mrphlgcl_dscrptr_result]))
     
-    # Return topological descriptor result (if called for)
+    # Return morphological descriptor result (if called for)
     if return_result: return mrphlgcl_dscrptr_result
+    else: return None
+
+def network_global_property_descriptor(
+        b: float,
+        L: np.ndarray,
+        coords: np.ndarray,
+        core_nodes: np.ndarray,
+        conn_edges: np.ndarray,
+        conn_edges_type: np.ndarray,
+        l_cntr_conn_edges: np.ndarray,
+        multigraph: bool,
+        result_filename: str,
+        prprty_dscrptr: str,
+        save_result: bool,
+        return_result: bool) -> float:
+    """Global network property descriptor.
+    
+    This function calculates the result of a global property descriptor
+    for a supplied network. The resulting global property descriptor
+    can be saved and returned.
+
+    Args:
+        b (float): Chain segment and/or cross-linker diameter.
+        L (np.ndarray): Simulation box side lengths.
+        coords (np.ndarray): Coordinates of the core nodes.
+        core_nodes (np.ndarray): Core nodes.
+        conn_edges (np.ndarray): Edges from the graph capturing the periodic connections between the core nodes.
+        conn_edges_type (np.ndarray): Type label for the edges from the graph capturing the periodic connections between the core nodes. Core edges are of type 1, and periodic boundary edges are of type 2.
+        l_cntr_conn_edges (np.ndarray): Contour length of the edges from the graph capturing the periodic connections between the core nodes.
+        multigraph (bool): Boolean indicating if a nx.Graph (False) or nx.MultiGraph (True) object is needed to represent the supplied network.
+        result_filename (str): Filename for the global property descriptor result.
+        prprty_dscrptr (str): Property descriptor name.
+        save_result (bool): Boolean indicating if the result ought to be saved.
+        return_result (bool): Boolean indicating if the result ought to be returned.
+    
+    Returns:
+        float: Global property descriptor result.
+    
+    """
+    # Property descriptors
+    prprty_dscrptr_list = [
+        "ee_glbl_mean_gamma", "eeel_glbl_mean_gamma",
+        "ee_glbl_mean_gamma_inv", "eeel_glbl_mean_gamma_inv",
+        "ee_dobrynin_kappa", "eeel_dobrynin_kappa"
+    ]
+    gamma_prprty_dscrptr_list = [
+        "ee_glbl_mean_gamma", "eeel_glbl_mean_gamma",
+        "ee_glbl_mean_gamma_inv", "eeel_glbl_mean_gamma_inv"
+    ]
+    
+    # Exit if the property descriptor is incompatible with the possible
+    # property descriptors
+    if prprty_dscrptr not in prprty_dscrptr_list:
+            error_str = (
+                "The property descriptor is incompatible with the "
+                + "possible property descriptors. Please modify the "
+                + "requested property descriptor accordingly."
+            )
+            raise ValueError(error_str)
+    
+    # Modify property descriptor string to match function name
+    # convention
+    prprty_dscrptr_func_str = prprty_dscrptr + "_func"
+
+    # Probe the property descriptors module to identify the property
+    # descriptor calculation function
+    if hasattr(src.descriptors.property_descriptors, prprty_dscrptr_func_str):
+        prprty_dscrptr_func = getattr(
+            src.descriptors.property_descriptors, prprty_dscrptr_func_str)
+    else:
+        error_str = (
+            "The property descriptor ``" + prprty_dscrptr + "'' is not "
+            + "implemented!"
+        )
+        raise AttributeError(error_str)
+    
+    # For the as-provided network, sort the node numbers in ascending
+    # order, and correspondingly sort both the core nodes type and the
+    # coordinates
+    argsort_indcs = np.argsort(core_nodes)
+    core_nodes = core_nodes[argsort_indcs]
+    coords = coords[argsort_indcs]
+
+    # For the as-provided network, lexicographically sort the edges,
+    # edges type, and edges contour length
+    conn_edges, lexsort_indcs = lexsorted_edges(conn_edges, return_indcs=True)
+    conn_edges_type = conn_edges_type[lexsort_indcs]
+    l_cntr_conn_edges = l_cntr_conn_edges[lexsort_indcs]
+
+    # Create nx.Graph or nx.MultiGraph by adding nodes before edges for
+    # the as-provided network
+    if multigraph: conn_graph = nx.MultiGraph()
+    else: conn_graph = nx.Graph()
+    conn_graph = add_nodes_from_numpy_array(conn_graph, core_nodes)
+    conn_graph = add_edges_from_numpy_array(conn_graph, conn_edges)
+
+    # If called for, extract the elastically-effective end-linked
+    # network. Otherwise, extract the largest connected component.
+    if prprty_dscrptr in gamma_prprty_dscrptr_list:
+        altrd_conn_graph = elastically_effective_end_linked_graph(conn_graph)
+    else: altrd_conn_graph = largest_connected_component(conn_graph)
+
+    # Remove isolate nodes in order to maintain the extracted
+    # elastically-effective end-linked network or the extracted
+    # largest connected component
+    altrd_conn_graph.remove_nodes_from(list(nx.isolates(altrd_conn_graph)))
+
+    # Extract edges from the altered network
+    altrd_conn_edges = extract_edges_to_numpy_array(altrd_conn_graph)
+
+    # Lexicographically sort the edges for the altered network
+    altrd_conn_edges = lexsorted_edges(altrd_conn_edges)
+    altrd_m = np.shape(altrd_conn_edges)[0]
+
+    # Downselect edges type and edges contour length for the altered
+    # network from the as-provided network
+    altrd_conn_edges_type = np.empty(altrd_m, dtype=int)
+    altrd_l_cntr_conn_edges = np.empty(altrd_m)
+    altrd_edge = 0
+    edge = 0
+    while altrd_edge < altrd_m:
+        if np.array_equal(altrd_conn_edges[altrd_edge], conn_edges[edge]):
+            altrd_conn_edges_type[altrd_edge] = conn_edges_type[edge]
+            altrd_l_cntr_conn_edges[altrd_edge] = l_cntr_conn_edges[edge]
+            altrd_edge += 1
+        edge += 1
+    
+    # Calculate property descriptor
+    if prprty_dscrptr in gamma_prprty_dscrptr_list:
+        prprty_dscrptr_result = prprty_dscrptr_func(
+            altrd_conn_edges, altrd_conn_edges_type, altrd_l_cntr_conn_edges,
+            coords, L)
+    else: prprty_dscrptr_result = prprty_dscrptr_func(altrd_conn_graph)
+    
+    # Save morphological descriptor result (if called for)
+    if save_result:
+        np.savetxt(result_filename, np.asarray([prprty_dscrptr_result]))
+    
+    # Return morphological descriptor result (if called for)
+    if return_result: return prprty_dscrptr_result
     else: return None

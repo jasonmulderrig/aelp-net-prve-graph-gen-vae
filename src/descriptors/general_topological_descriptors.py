@@ -76,6 +76,9 @@ def l_func(
         np.ndarray: Euclidean edge lengths.
     
     """
+    # Force single-edge conn_edges np.ndarray to be two-dimensional
+    if np.ndim(conn_edges) == 1: conn_edges = np.expand_dims(conn_edges, axis=0)
+    
     # Initialize edge length np.ndarray
     m = np.shape(conn_edges)[0]
     l_edges = np.empty(m)
@@ -150,6 +153,9 @@ def l_cmpnts_func(
         np.ndarray: Euclidean edge length components.
     
     """
+    # Force single-edge conn_edges np.ndarray to be two-dimensional
+    if np.ndim(conn_edges) == 1: conn_edges = np.expand_dims(conn_edges, axis=0)
+    
     # Initialize edge length components np.ndarray
     m = np.shape(conn_edges)[0]
     dim = np.shape(coords)[1]
@@ -196,6 +202,9 @@ def l_naive_func(
         np.ndarray: Naive Euclidean edge lengths.
     
     """
+    # Force single-edge conn_edges np.ndarray to be two-dimensional
+    if np.ndim(conn_edges) == 1: conn_edges = np.expand_dims(conn_edges, axis=0)
+    
     # Initialize edge length np.ndarray
     m = np.shape(conn_edges)[0]
     l_naive_edges = np.empty(m)
@@ -389,7 +398,7 @@ def rho_graph_func(graph: nx.Graph | nx.MultiGraph) -> float:
 # C++ OR RUST, LIKE IGRAPH OR RUSTWORKX, RESPECTIVELY. ALSO, IT HAS BEEN
 # SUGGESETED TO USE THE MINIMUM CYCLE BASIS FOR LOOP CALCULATION, SINCE
 # IT IS DETERMINISTIC, BUT THIS MEASURE STILL MIGHT NOT BE THE CORRECT
-# MEASURE FOR CAPTURING RINGS IN THE NETWORK.
+# MEASURE FOR CAPTURING RINGS IN THE NETWORK...
 # def h_func(
 #         graph: nx.Graph | nx.MultiGraph,
 #         length_bound: int,

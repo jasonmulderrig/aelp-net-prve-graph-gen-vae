@@ -14,6 +14,7 @@ def params_arr_func(cfg) -> tuple[np.ndarray, int]:
     dim_arr = np.asarray(topology.dim, dtype=int)
     b_arr = np.asarray(topology.b)
     xi_arr = np.asarray(topology.xi)
+    chi_arr = np.asarray(topology.chi)
     rho_en_arr = np.asarray(topology.rho_en)
     k_arr = np.asarray(topology.k, dtype=int)
     n_arr = np.asarray(topology.n, dtype=int)
@@ -22,35 +23,40 @@ def params_arr_func(cfg) -> tuple[np.ndarray, int]:
     dim_num = np.shape(dim_arr)[0]
     b_num = np.shape(b_arr)[0]
     xi_num = np.shape(xi_arr)[0]
+    chi_num = np.shape(chi_arr)[0]
     rho_en_num = np.shape(rho_en_arr)[0]
     k_num = np.shape(k_arr)[0]
     n_num = np.shape(n_arr)[0]
     en_num = np.shape(en_arr)[0]
-    sample_num = dim_num * b_num * xi_num * rho_en_num * k_num * n_num * en_num
+    sample_num = (
+        dim_num * b_num * xi_num * chi_num * rho_en_num * k_num * n_num * en_num
+    )
 
-    params_arr = np.empty((sample_num, 7))
+    params_arr = np.empty((sample_num, 8))
     sample = 0
     for dim in dim_arr:
         for b in b_arr:
             for xi in xi_arr:
-                for rho_en in rho_en_arr:
-                    for k in k_arr:
-                        for n in n_arr:
-                            for en in en_arr:
-                                params_arr[sample, :] = (
-                                    np.asarray(
-                                        [
-                                            dim,
-                                            b,
-                                            xi,
-                                            rho_en,
-                                            k,
-                                            n,
-                                            en
-                                        ]
+                for chi in chi_arr:
+                    for rho_en in rho_en_arr:
+                        for k in k_arr:
+                            for n in n_arr:
+                                for en in en_arr:
+                                    params_arr[sample, :] = (
+                                        np.asarray(
+                                            [
+                                                dim,
+                                                b,
+                                                xi,
+                                                chi,
+                                                rho_en,
+                                                k,
+                                                n,
+                                                en
+                                            ]
+                                        )
                                     )
-                                )
-                                sample += 1
+                                    sample += 1
     
     return params_arr, sample_num
 
@@ -63,6 +69,7 @@ def sample_params_arr_func(cfg) -> tuple[np.ndarray, int]:
     dim_arr = np.asarray(topology.dim, dtype=int)
     b_arr = np.asarray(topology.b)
     xi_arr = np.asarray(topology.xi)
+    chi_arr = np.asarray(topology.chi)
     rho_en_arr = np.asarray(topology.rho_en)
     k_arr = np.asarray(topology.k, dtype=int)
     n_arr = np.asarray(topology.n, dtype=int)
@@ -71,36 +78,41 @@ def sample_params_arr_func(cfg) -> tuple[np.ndarray, int]:
     dim_num = np.shape(dim_arr)[0]
     b_num = np.shape(b_arr)[0]
     xi_num = np.shape(xi_arr)[0]
+    chi_num = np.shape(chi_arr)[0]
     rho_en_num = np.shape(rho_en_arr)[0]
     k_num = np.shape(k_arr)[0]
     n_num = np.shape(n_arr)[0]
     en_num = np.shape(en_arr)[0]
-    sample_num = dim_num * b_num * xi_num * rho_en_num * k_num * n_num * en_num
+    sample_num = (
+        dim_num * b_num * xi_num * chi_num * rho_en_num * k_num * n_num * en_num
+    )
 
-    sample_params_arr = np.empty((sample_num, 8))
+    sample_params_arr = np.empty((sample_num, 9))
     sample = 0
     for dim in dim_arr:
         for b in b_arr:
             for xi in xi_arr:
-                for rho_en in rho_en_arr:
-                    for k in k_arr:
-                        for n in n_arr:
-                            for en in en_arr:
-                                sample_params_arr[sample, :] = (
-                                    np.asarray(
-                                        [
-                                            sample,
-                                            dim,
-                                            b,
-                                            xi,
-                                            rho_en,
-                                            k,
-                                            n,
-                                            en
-                                        ]
+                for chi in chi_arr:
+                    for rho_en in rho_en_arr:
+                        for k in k_arr:
+                            for n in n_arr:
+                                for en in en_arr:
+                                    sample_params_arr[sample, :] = (
+                                        np.asarray(
+                                            [
+                                                sample,
+                                                dim,
+                                                b,
+                                                xi,
+                                                chi,
+                                                rho_en,
+                                                k,
+                                                n,
+                                                en
+                                            ]
+                                        )
                                     )
-                                )
-                                sample += 1
+                                    sample += 1
     
     return sample_params_arr, sample_num
 
@@ -113,6 +125,7 @@ def sample_config_params_arr_func(cfg) -> tuple[np.ndarray, int]:
     dim_arr = np.asarray(topology.dim, dtype=int)
     b_arr = np.asarray(topology.b)
     xi_arr = np.asarray(topology.xi)
+    chi_arr = np.asarray(topology.chi)
     rho_en_arr = np.asarray(topology.rho_en)
     k_arr = np.asarray(topology.k, dtype=int)
     n_arr = np.asarray(topology.n, dtype=int)
@@ -122,43 +135,46 @@ def sample_config_params_arr_func(cfg) -> tuple[np.ndarray, int]:
     dim_num = np.shape(dim_arr)[0]
     b_num = np.shape(b_arr)[0]
     xi_num = np.shape(xi_arr)[0]
+    chi_num = np.shape(chi_arr)[0]
     rho_en_num = np.shape(rho_en_arr)[0]
     k_num = np.shape(k_arr)[0]
     n_num = np.shape(n_arr)[0]
     en_num = np.shape(en_arr)[0]
     config_num = np.shape(config_arr)[0]
     sample_config_num = (
-        dim_num * b_num * xi_num * rho_en_num * k_num * n_num * en_num
+        dim_num * b_num * xi_num * chi_num * rho_en_num * k_num * n_num * en_num
         * config_num
     )
 
-    sample_config_params_arr = np.empty((sample_config_num, 9))
+    sample_config_params_arr = np.empty((sample_config_num, 10))
     sample = 0
     indx = 0
     for dim in dim_arr:
         for b in b_arr:
             for xi in xi_arr:
-                for rho_en in rho_en_arr:
-                    for k in k_arr:
-                        for n in n_arr:
-                            for en in en_arr:
-                                for config in config_arr:
-                                    sample_config_params_arr[indx, :] = (
-                                        np.asarray(
-                                            [
-                                                sample,
-                                                dim,
-                                                b,
-                                                xi,
-                                                rho_en,
-                                                k,
-                                                n,
-                                                en,
-                                                config
-                                            ]
+                for chi in chi_arr:
+                    for rho_en in rho_en_arr:
+                        for k in k_arr:
+                            for n in n_arr:
+                                for en in en_arr:
+                                    for config in config_arr:
+                                        sample_config_params_arr[indx, :] = (
+                                            np.asarray(
+                                                [
+                                                    sample,
+                                                    dim,
+                                                    b,
+                                                    xi,
+                                                    chi,
+                                                    rho_en,
+                                                    k,
+                                                    n,
+                                                    en,
+                                                    config
+                                                ]
+                                            )
                                         )
-                                    )
-                                    indx += 1
-                                sample += 1
+                                        indx += 1
+                                    sample += 1
     
     return sample_config_params_arr, sample_config_num

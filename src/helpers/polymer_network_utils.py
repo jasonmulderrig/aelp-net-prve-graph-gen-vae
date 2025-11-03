@@ -1,19 +1,20 @@
-def m_arg_stoich_func(n: float, k: float) -> float:
+def m_arg_n_func(n: float, k: float, chi: float) -> float:
     """Number of chains.
 
     This function calculates the number of chains, given the number of
-    cross-linkers and the maximum cross-linker degree/functionality.
-    This calculation assumes a stoichiometric mixture of cross-linkers
-    and chains.
+    cross-linkers, the maximum cross-linker degree/functionality, and
+    the stoichiometric imbalance between the number of cross-linker
+    sites and the number of chain ends.
 
     Args:
         n (float): Number of cross-linkers.
         k (float): Maximum cross-linker degree/functionality.
+        chi (float): Stoichiometric imbalance between the number of cross-linker sites and the number of chain ends.
 
     Returns:
         float: Number of chains.
     """
-    return n * k / 2
+    return n * k / (2*chi)
 
 def m_arg_en_func(n_en: float, en: float) -> float:
     """Number of chains.
@@ -47,22 +48,23 @@ def en_arg_m_func(n_en: float, m: float) -> float:
     """
     return n_en / m
 
-def n_arg_stoich_func(m: float, k: float) -> float:
+def n_arg_m_func(chi: float, m: float, k: float) -> float:
     """Number of cross-linkers.
 
     This function calculates the number of cross-linkers, given the
-    number of chains and the maximum cross-linker degree/functionality.
-    This calculation assumes a stoichiometric mixture of cross-linkers
-    and chains.
+    stoichiometric imbalance between the number of cross-linker sites
+    and the number of chain ends, the number of chains, and the maximum
+    cross-linker degree/functionality.
 
     Args:
+        chi (float): Stoichiometric imbalance between the number of cross-linker sites and the number of chain ends.
         m (float): Number of chains.
         k (float): Maximum cross-linker degree/functionality.
 
     Returns:
-        float: Number of chains.
+        float: Number of cross-linkers.
     """
-    return 2 * m / k
+    return 2 * chi * m / k
 
 def n_en_arg_m_func(m: float, en: float) -> float:
     """Number of chain segment particles.
